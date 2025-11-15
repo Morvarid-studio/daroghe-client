@@ -24,10 +24,10 @@ export default defineConfig({
           .toLowerCase()
       },
 
-      beforeWriteFiles: root => {
-        root.insert('/apps/email/:filter', '/resources/ts/pages/apps/email/index.vue')
-        root.insert('/apps/email/:label', '/resources/ts/pages/apps/email/index.vue')
-      },
+      // beforeWriteFiles: root => {
+      //   root.insert('/apps/email/:filter', '/resources/ts/pages/apps/email/index.vue')
+      //   root.insert('/apps/email/:label', '/resources/ts/pages/apps/email/index.vue')
+      // },
 
       routesFolder: 'resources/ts/pages',
     }),

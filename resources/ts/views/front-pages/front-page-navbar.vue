@@ -58,36 +58,6 @@ const menuItems: MenuItem[] = [
     listTitle: 'Auth Demo',
     listIcon: 'bx-lock-open',
     navItems: [
-      { name: 'Login (Basic)', to: { name: 'pages-authentication-login-v1' } },
-      { name: 'Login (Cover)', to: { name: 'pages-authentication-login-v2' } },
-      {
-        name: 'Register (Basic)',
-        to: { name: 'pages-authentication-register-v1' },
-      },
-      {
-        name: 'Register (Cover)',
-        to: { name: 'pages-authentication-register-v2' },
-      },
-      {
-        name: 'Register (Multi-steps)',
-        to: { name: 'pages-authentication-register-multi-steps' },
-      },
-      {
-        name: 'Forgot Password (Basic)',
-        to: { name: 'pages-authentication-forgot-password-v1' },
-      },
-      {
-        name: 'Forgot Password (Cover)',
-        to: { name: 'pages-authentication-forgot-password-v2' },
-      },
-      {
-        name: 'Reset Password (Basic)',
-        to: { name: 'pages-authentication-reset-password-v1' },
-      },
-      {
-        name: 'Reset Password (cover  )',
-        to: { name: 'pages-authentication-reset-password-v2' },
-      },
     ],
   },
   {

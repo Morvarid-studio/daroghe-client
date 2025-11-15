@@ -1,177 +1,103 @@
-<!-- ❗Errors in the form are set on line 60 -->
 <script setup lang="ts">
-import { VForm } from 'vuetify/components/VForm'
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
-import authV2LoginIllustration from '@images/pages/auth-v2-login-illustration.png'
+import authV1BottomShape from '@images/svg/auth-v1-bottom-shape.svg?raw'
+import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?raw'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 
 definePage({
   meta: {
     layout: 'blank',
-    unauthenticatedOnly: true,
+    public: true,
   },
 })
 
+const form = ref({
+  email: '',
+  password: '',
+  remember: false,
+})
+
 const isPasswordVisible = ref(false)
-
-const route = useRoute()
-const router = useRouter()
-
-const ability = useAbility()
-
-const errors = ref<Record<string, string | undefined>>({
-  email: undefined,
-  password: undefined,
-})
-
-const refVForm = ref<VForm>()
-
-const credentials = ref({
-  email: 'admin@demo.com',
-  password: 'admin',
-})
-
-const rememberMe = ref(false)
-
-const login = async () => {
-  try {
-    const res = await $api('/auth/login', {
-      method: 'POST',
-      body: {
-        email: credentials.value.email,
-        password: credentials.value.password,
-      },
-      onResponseError({ response }) {
-        errors.value = response._data.errors
-      },
-    })
-
-    const { accessToken, userData, userAbilityRules } = res
-
-    useCookie('userAbilityRules').value = userAbilityRules
-    ability.update(userAbilityRules)
-
-    useCookie('userData').value = userData
-    useCookie('accessToken').value = accessToken
-
-    // Redirect to `to` query if exist or redirect to index route
-    // ❗ nextTick is required to wait for DOM updates and later redirect
-    await nextTick(() => {
-      router.replace(route.query.to ? String(route.query.to) : '/')
-    })
-  }
-  catch (err) {
-    console.error(err)
-  }
-}
-
-const onSubmit = () => {
-  refVForm.value?.validate()
-    .then(({ valid: isValid }) => {
-      if (isValid)
-        login()
-    })
-}
 </script>
 
 <template>
-  <RouterLink to="/">
-    <div class="auth-logo d-flex align-center gap-x-2">
-      <VNodeRenderer :nodes="themeConfig.app.logo" />
-      <h1 class="auth-title">
-        {{ themeConfig.app.title }}
-      </h1>
-    </div>
-  </RouterLink>
+  <div class="auth-wrapper d-flex align-center justify-center pa-4">
+    <div class="position-relative my-sm-16">
+      <!-- 👉 Top shape -->
+      <VNodeRenderer
+        :nodes="h('div', { innerHTML: authV1TopShape })"
+        class="text-primary auth-v1-top-shape d-none d-sm-block"
+      />
 
-  <VRow
-    no-gutters
-    class="auth-wrapper bg-surface"
-  >
-    <VCol
-      md="8"
-      class="d-none d-md-flex"
-    >
-      <div class="position-relative bg-background w-100 pa-8">
-        <div class="d-flex align-center justify-center w-100 h-100">
-          <VImg
-            max-width="700"
-            :src="authV2LoginIllustration"
-            class="auth-illustration"
-          />
-        </div>
-      </div>
-    </VCol>
+      <!-- 👉 Bottom shape -->
+      <VNodeRenderer
+        :nodes="h('div', { innerHTML: authV1BottomShape })"
+        class="text-primary auth-v1-bottom-shape d-none d-sm-block"
+      />
 
-    <VCol
-      cols="12"
-      md="4"
-      class="auth-card-v2 d-flex align-center justify-center"
-    >
+      <!-- 👉 Auth Card -->
       <VCard
-        flat
-        :max-width="500"
-        class="mt-12 mt-sm-0 pa-6"
+        class="auth-card"
+        max-width="460"
+        :class="$vuetify.display.smAndUp ? 'pa-6' : 'pa-0'"
       >
+        <VCardItem class="justify-center">
+          <VCardTitle>
+            <RouterLink to="/">
+              <div class="app-logo">
+                <VNodeRenderer :nodes="themeConfig.app.logo" />
+                <h1 class="app-logo-title">
+                  {{ themeConfig.app.title }}
+                </h1>
+              </div>
+            </RouterLink>
+          </VCardTitle>
+        </VCardItem>
+
         <VCardText>
           <h4 class="text-h4 mb-1">
-            Welcome to <span class="text-capitalize"> {{ themeConfig.app.title }} </span>! 👋🏻
+            Welcome to
+            <span class="text-capitalize">{{ themeConfig.app.title }}</span>! 👋🏻
           </h4>
           <p class="mb-0">
             Please sign-in to your account and start the adventure
           </p>
         </VCardText>
+
         <VCardText>
-          <VAlert
-            color="primary"
-            variant="tonal"
-          >
-            <p class="text-sm mb-2">
-              Admin Email: <strong>admin@demo.com</strong> / Pass: <strong>admin</strong>
-            </p>
-            <p class="text-sm mb-0">
-              Client Email: <strong>client@demo.com</strong> / Pass: <strong>client</strong>
-            </p>
-          </VAlert>
-        </VCardText>
-        <VCardText>
-          <VForm
-            ref="refVForm"
-            @submit.prevent="onSubmit"
-          >
+          <VForm @submit.prevent="() => {}">
             <VRow>
               <!-- email -->
               <VCol cols="12">
                 <AppTextField
-                  v-model="credentials.email"
-                  label="Email"
-                  placeholder="johndoe@email.com"
-                  type="email"
+                  v-model="form.email"
                   autofocus
-                  :rules="[requiredValidator, emailValidator]"
+                  label="Email or Username"
+                  type="email"
+                  placeholder="johndoe@email.com"
                 />
               </VCol>
 
               <!-- password -->
               <VCol cols="12">
                 <AppTextField
-                  v-model="credentials.password"
+                  v-model="form.password"
                   label="Password"
                   placeholder="············"
-                  :rules="[requiredValidator]"
                   :type="isPasswordVisible ? 'text' : 'password'"
                   autocomplete="password"
-                  :error-messages="errors.password"
                   :append-inner-icon="isPasswordVisible ? 'bx-hide' : 'bx-show'"
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 />
 
-                <div class="d-flex align-center flex-wrap justify-space-between my-6">
+                <!-- remember me checkbox -->
+                <div class="d-flex align-center justify-space-between flex-wrap my-6">
                   <VCheckbox
-                    v-model="rememberMe"
+                    v-model="form.remember"
                     label="Remember me"
                   />
+
                   <RouterLink
                     class="text-primary"
                     :to="{ name: 'forgot-password' }"
@@ -180,6 +106,7 @@ const onSubmit = () => {
                   </RouterLink>
                 </div>
 
+                <!-- login button -->
                 <VBtn
                   block
                   type="submit"
@@ -193,9 +120,7 @@ const onSubmit = () => {
                 cols="12"
                 class="text-body-1 text-center"
               >
-                <span class="d-inline-block">
-                  New on our platform?
-                </span>
+                <span class="d-inline-block"> New on our platform? </span>
                 <RouterLink
                   class="text-primary ms-1 d-inline-block text-body-1"
                   :to="{ name: 'register' }"
@@ -203,12 +128,13 @@ const onSubmit = () => {
                   Create an account
                 </RouterLink>
               </VCol>
+
               <VCol
                 cols="12"
                 class="d-flex align-center"
               >
                 <VDivider />
-                <span class="mx-4">or</span>
+                <span class="mx-4 text-high-emphasis">or</span>
                 <VDivider />
               </VCol>
 
@@ -223,8 +149,8 @@ const onSubmit = () => {
           </VForm>
         </VCardText>
       </VCard>
-    </VCol>
-  </VRow>
+    </div>
+  </div>
 </template>
 
 <style lang="scss">
