@@ -5,6 +5,7 @@ import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?raw'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 
+
 definePage({
   meta: {
     layout: 'blank',
@@ -12,14 +13,60 @@ definePage({
   },
 })
 
+const route = useRoute()
+const router = useRouter()
+
+const ability = useAbility()
+
+
+
 const form = ref({
-  username: '',
+  user_name: '',
   email: '',
   password: '',
   privacyPolicies: false,
 })
 
 const isPasswordVisible = ref(false)
+
+const register = async () => {
+  try {
+    const res = await $api('/register', {
+      method: 'POST',
+      body: form.value,
+      onResponseError({ response }) {
+        //errors.value = response._data.errors
+      },
+    })
+
+    const { token, user } = res
+
+    //useCookie('userAbilityRules').value = userAbilityRules
+    //ability.update(userAbilityRules)
+
+    useCookie('user').value = user
+    useCookie('accessToken').value = token
+
+    // Redirect to `to` query if exist or redirect to index route
+    // ❗ nextTick is required to wait for DOM updates and later redirect
+    await nextTick(() => {
+      router.replace('/')
+    })
+  }
+  catch (err) {
+    console.error(err)
+  }
+}
+
+// const onSubmit = () => {
+//   refVForm.value?.validate()
+//     .then(({ valid: isValid }) => {
+//       if (isValid)
+//         login()
+//     })
+// }
+
+
 </script>
 
 <template>
@@ -66,12 +113,12 @@ const isPasswordVisible = ref(false)
         </VCardText>
 
         <VCardText>
-          <VForm @submit.prevent="() => {}">
+          <VForm @submit.prevent="register">
             <VRow>
               <!-- Username -->
               <VCol cols="12">
                 <AppTextField
-                  v-model="form.username"
+                  v-model="form.user_name"
                   autofocus
                   label="Username"
                   placeholder="Johndoe"
