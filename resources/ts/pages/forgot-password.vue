@@ -1,64 +1,62 @@
 <script setup lang="ts">
+import authV1BottomShape from '@images/svg/auth-v1-bottom-shape.svg?raw'
+import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?raw'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
-
-import authV2ForgotPasswordIllustration from '@images/pages/auth-v2-forgot-password-illustration.png'
-
-const email = ref('')
 
 definePage({
   meta: {
     layout: 'blank',
-    unauthenticatedOnly: true,
+    public: true,
   },
+})
+
+const form = ref({
+  email: '',
 })
 </script>
 
 <template>
-  <RouterLink to="/">
-    <div class="auth-logo d-flex align-center gap-x-2">
-      <VNodeRenderer :nodes="themeConfig.app.logo" />
-      <h1 class="auth-title">
-        {{ themeConfig.app.title }}
-      </h1>
-    </div>
-  </RouterLink>
+  <div class="auth-wrapper d-flex align-center justify-center pa-4">
+    <div class="position-relative my-sm-16">
+      <!-- 👉 Top shape -->
+      <VNodeRenderer
+        :nodes="h('div', { innerHTML: authV1TopShape })"
+        class="text-primary auth-v1-top-shape d-none d-sm-block"
+      />
 
-  <VRow
-    class="auth-wrapper bg-surface"
-    no-gutters
-  >
-    <VCol
-      md="8"
-      class="d-none d-md-flex"
-    >
-      <div class="position-relative bg-background w-100 pa-8">
-        <div class="d-flex align-center justify-center w-100 h-100">
-          <VImg
-            max-width="700"
-            :src="authV2ForgotPasswordIllustration"
-            class="auth-illustration"
-          />
-        </div>
-      </div>
-    </VCol>
+      <!-- 👉 Bottom shape -->
+      <VNodeRenderer
+        :nodes="h('div', { innerHTML: authV1BottomShape })"
+        class="text-primary auth-v1-bottom-shape d-none d-sm-block"
+      />
 
-    <VCol
-      cols="12"
-      md="4"
-      class="d-flex align-center justify-center"
-    >
+      <!-- 👉 Auth card -->
       <VCard
-        flat
-        :max-width="500"
-        class="mt-12 mt-sm-0 pa-6"
+        class="auth-card"
+        max-width="460"
+        :class="$vuetify.display.smAndUp ? 'pa-6' : 'pa-0'"
       >
+        <VCardItem class="justify-center">
+          <VCardTitle>
+            <RouterLink to="/">
+              <div class="app-logo">
+                <VNodeRenderer :nodes="themeConfig.app.logo" />
+                <h1 class="app-logo-title">
+                  {{ themeConfig.app.title }}
+                </h1>
+              </div>
+            </RouterLink>
+          </VCardTitle>
+        </VCardItem>
+
         <VCardText>
           <h4 class="text-h4 mb-1">
             Forgot Password? 🔒
           </h4>
           <p class="mb-0">
-            Enter your email and we'll send you instructions to reset your password
+            Enter your email and we'll send you instructions to reset your
+            password
           </p>
         </VCardText>
 
@@ -68,7 +66,7 @@ definePage({
               <!-- email -->
               <VCol cols="12">
                 <AppTextField
-                  v-model="email"
+                  v-model="form.email"
                   autofocus
                   label="Email"
                   type="email"
@@ -76,7 +74,7 @@ definePage({
                 />
               </VCol>
 
-              <!-- Reset link -->
+              <!-- reset password -->
               <VCol cols="12">
                 <VBtn
                   block
@@ -104,10 +102,10 @@ definePage({
           </VForm>
         </VCardText>
       </VCard>
-    </VCol>
-  </VRow>
+    </div>
+  </div>
 </template>
 
 <style lang="scss">
-@use "@core-scss/template/pages/page-auth.scss";
+@use "@core-scss/template/pages/page-auth";
 </style>

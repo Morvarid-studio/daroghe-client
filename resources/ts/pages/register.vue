@@ -1,69 +1,108 @@
 <script setup lang="ts">
-import { VForm } from 'vuetify/components/VForm'
-
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
+import authV1BottomShape from '@images/svg/auth-v1-bottom-shape.svg?raw'
+import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?raw'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 
-import authV2RegisterIllustration from '@images/pages/auth-v2-register-illustration.png'
 
 definePage({
   meta: {
     layout: 'blank',
-    unauthenticatedOnly: true,
+    public: true,
   },
 })
 
+const route = useRoute()
+const router = useRouter()
+
+const ability = useAbility()
+
+
+
 const form = ref({
-  username: '',
+  user_name: '',
   email: '',
   password: '',
   privacyPolicies: false,
 })
 
 const isPasswordVisible = ref(false)
+
+const register = async () => {
+  try {
+    const res = await $api('/register', {
+      method: 'POST',
+      body: form.value,
+      onResponseError({ response }) {
+        //errors.value = response._data.errors
+      },
+    })
+
+    const { token, user } = res
+
+    //useCookie('userAbilityRules').value = userAbilityRules
+    //ability.update(userAbilityRules)
+
+    useCookie('user').value = user
+    useCookie('accessToken').value = token
+
+    // Redirect to `to` query if exist or redirect to index route
+    // ❗ nextTick is required to wait for DOM updates and later redirect
+    await nextTick(() => {
+      router.replace('/')
+    })
+  }
+  catch (err) {
+    console.error(err)
+  }
+}
+
+// const onSubmit = () => {
+//   refVForm.value?.validate()
+//     .then(({ valid: isValid }) => {
+//       if (isValid)
+//         login()
+//     })
+// }
+
+
 </script>
 
 <template>
-  <RouterLink to="/">
-    <div class="auth-logo d-flex align-center gap-x-2">
-      <VNodeRenderer :nodes="themeConfig.app.logo" />
-      <h1 class="auth-title">
-        {{ themeConfig.app.title }}
-      </h1>
-    </div>
-  </RouterLink>
+  <div class="auth-wrapper d-flex align-center justify-center pa-4">
+    <div class="position-relative my-sm-16">
+      <!-- 👉 Top shape -->
+      <VNodeRenderer
+        :nodes="h('div', { innerHTML: authV1TopShape })"
+        class="text-primary auth-v1-top-shape d-none d-sm-block"
+      />
 
-  <VRow
-    no-gutters
-    class="auth-wrapper bg-surface"
-  >
-    <VCol
-      md="8"
-      class="d-none d-md-flex"
-    >
-      <div class="position-relative bg-background w-100 pa-8">
-        <div class="d-flex align-center justify-center w-100 h-100">
-          <VImg
-            max-width="700"
-            :src="authV2RegisterIllustration"
-            class="auth-illustration"
-          />
-        </div>
-      </div>
-    </VCol>
+      <!-- 👉 Bottom shape -->
+      <VNodeRenderer
+        :nodes="h('div', { innerHTML: authV1BottomShape })"
+        class="text-primary auth-v1-bottom-shape d-none d-sm-block"
+      />
 
-    <VCol
-      cols="12"
-      md="4"
-      class="auth-card-v2 d-flex align-center justify-center"
-      style="background-color: rgb(var(--v-theme-surface))"
-    >
+      <!-- 👉 Auth card -->
       <VCard
-        flat
-        :max-width="500"
-        class="mt-12 mt-sm-0 pa-6"
+        class="auth-card"
+        max-width="460"
+        :class="$vuetify.display.smAndUp ? 'pa-6' : 'pa-0'"
       >
+        <VCardItem class="justify-center">
+          <VCardTitle>
+            <RouterLink to="/">
+              <div class="app-logo">
+                <VNodeRenderer :nodes="themeConfig.app.logo" />
+                <h1 class="app-logo-title">
+                  {{ themeConfig.app.title }}
+                </h1>
+              </div>
+            </RouterLink>
+          </VCardTitle>
+        </VCardItem>
+
         <VCardText>
           <h4 class="text-h4 mb-1">
             Adventure starts here 🚀
@@ -74,24 +113,21 @@ const isPasswordVisible = ref(false)
         </VCardText>
 
         <VCardText>
-          <VForm @submit.prevent="() => {}">
+          <VForm @submit.prevent="register">
             <VRow>
               <!-- Username -->
               <VCol cols="12">
                 <AppTextField
-                  v-model="form.username"
-                  :rules="[requiredValidator]"
+                  v-model="form.user_name"
                   autofocus
                   label="Username"
                   placeholder="Johndoe"
                 />
               </VCol>
-
               <!-- email -->
               <VCol cols="12">
                 <AppTextField
                   v-model="form.email"
-                  :rules="[requiredValidator, emailValidator]"
                   label="Email"
                   type="email"
                   placeholder="johndoe@email.com"
@@ -102,7 +138,6 @@ const isPasswordVisible = ref(false)
               <VCol cols="12">
                 <AppTextField
                   v-model="form.password"
-                  :rules="[requiredValidator]"
                   label="Password"
                   placeholder="············"
                   :type="isPasswordVisible ? 'text' : 'password'"
@@ -137,14 +172,14 @@ const isPasswordVisible = ref(false)
                 </VBtn>
               </VCol>
 
-              <!-- create account -->
+              <!-- login instead -->
               <VCol
                 cols="12"
                 class="text-center text-base"
               >
-                <span class="d-inline-block">Already have an account?</span>
+                <span>Already have an account?</span>
                 <RouterLink
-                  class="text-primary ms-1 d-inline-block"
+                  class="text-primary ms-1"
                   :to="{ name: 'login' }"
                 >
                   Sign in instead
@@ -171,8 +206,8 @@ const isPasswordVisible = ref(false)
           </VForm>
         </VCardText>
       </VCard>
-    </VCol>
-  </VRow>
+    </div>
+  </div>
 </template>
 
 <style lang="scss">
