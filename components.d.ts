@@ -195,7 +195,6 @@ declare module 'vue' {
     DemoFormWizardIconsModernVertical: typeof import('./resources/ts/views/demos/forms/form-wizard/form-wizard-icons/DemoFormWizardIconsModernVertical.vue')['default']
     DemoFormWizardIconsValidation: typeof import('./resources/ts/views/demos/forms/form-wizard/form-wizard-icons/DemoFormWizardIconsValidation.vue')['default']
     DemoFormWizardIconsVertical: typeof import('./resources/ts/views/demos/forms/form-wizard/form-wizard-icons/DemoFormWizardIconsVertical.vue')['default']
-    DemoFormWizardNumberdModernBasic: typeof import('./resources/ts/views/demos/forms/form-wizard/form-wizard-numbered/DemoFormWizardNumberdModernBasic.vue')['default']
     DemoFormWizardNumberedBasic: typeof import('./resources/ts/views/demos/forms/form-wizard/form-wizard-numbered/DemoFormWizardNumberedBasic.vue')['default']
     DemoFormWizardNumberedModernBasic: typeof import('./resources/ts/views/demos/forms/form-wizard/form-wizard-numbered/DemoFormWizardNumberedModernBasic.vue')['default']
     DemoFormWizardNumberedModernVertical: typeof import('./resources/ts/views/demos/forms/form-wizard/form-wizard-numbered/DemoFormWizardNumberedModernVertical.vue')['default']
@@ -393,6 +392,5 @@ declare module 'vue' {
     TwoFactorAuthDialog: typeof import('./resources/ts/components/dialogs/TwoFactorAuthDialog.vue')['default']
     UserInfoEditDialog: typeof import('./resources/ts/components/dialogs/UserInfoEditDialog.vue')['default']
     UserUpgradePlanDialog: typeof import('./resources/ts/components/dialogs/UserUpgradePlanDialog.vue')['default']
-    VueApexCharts: typeof import('vue3-apexcharts')['default']
   }
 }

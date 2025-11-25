@@ -24,10 +24,10 @@ export default defineConfig({
           .toLowerCase()
       },
 
-      beforeWriteFiles: root => {
-        root.insert('/apps/email/:filter', '/resources/ts/pages/apps/email/index.vue')
-        root.insert('/apps/email/:label', '/resources/ts/pages/apps/email/index.vue')
-      },
+      // beforeWriteFiles: root => {
+      //   root.insert('/apps/email/:filter', '/resources/ts/pages/apps/email/index.vue')
+      //   root.insert('/apps/email/:label', '/resources/ts/pages/apps/email/index.vue')
+      // },
 
       routesFolder: 'resources/ts/pages',
     }),
@@ -110,5 +110,15 @@ export default defineConfig({
     entries: [
       './resources/ts/**/*.vue',
     ],
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_BASE_URL || 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path, // Keep the /api prefix
+      },
+    },
   },
 })
