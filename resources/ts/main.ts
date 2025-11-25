@@ -9,6 +9,7 @@ link.href = 'https://cdn.jsdelivr.net/gh/rastikerdar/b-nazanin-font@v1.0.4/dist/
 link.rel = 'stylesheet'
 document.head.appendChild(link)
 
+import axios from '@/plugins/axios'
 
 // Styles
 import '@core-scss/template/index.scss'
