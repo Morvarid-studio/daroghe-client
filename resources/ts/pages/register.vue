@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { h } from 'vue'
+import api from '@/plugins/axios'
+import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import authV1BottomShape from '@images/svg/auth-v1-bottom-shape.svg?raw'
 import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?raw'
@@ -13,59 +17,67 @@ definePage({
   },
 })
 
-const route = useRoute()
 const router = useRouter()
-
-const ability = useAbility()
-
-
 
 const form = ref({
   user_name: '',
   email: '',
   password: '',
-  privacyPolicies: false,
+  confirm_password: '',
+  // privacyPolicies: false,
 })
 
 const isPasswordVisible = ref(false)
+const isConfirmedPasswordVisible = ref(false)
+const isLoading = ref(false)
+const errorMessage = ref('')
 
 const register = async () => {
-  try {
-    const res = await $api('/register', {
-      method: 'POST',
-      body: form.value,
-      onResponseError({ response }) {
-        //errors.value = response._data.errors
-      },
-    })
 
-    const { token, user } = res
-
-    //useCookie('userAbilityRules').value = userAbilityRules
-    //ability.update(userAbilityRules)
-
-    useCookie('user').value = user
-    useCookie('accessToken').value = token
-
-    // Redirect to `to` query if exist or redirect to index route
-    // ❗ nextTick is required to wait for DOM updates and later redirect
-    await nextTick(() => {
-      router.replace('/')
-    })
+  if (!form.value.user_name || !form.value.email || !form.value.password) {
+    errorMessage.value = 'لطفا همه فیلدها را پر کنید.'
+    return
   }
-  catch (err) {
-    console.error(err)
+
+  if (form.value.password !== form.value.confirm_password) {
+    errorMessage.value = 'رمز عبور و تکرار آن یکسان نیست.'
+    return
+  }
+
+  // if (!form.value.privacyPolicies) {
+  //   errorMessage.value = 'برای ثبت‌نام باید قوانین را بپذیرید.'
+  //   return
+  // }
+
+  try {
+    isLoading.value = true
+    errorMessage.value = ''
+    const res = await api.post('/api/register', {
+      user_name: form.value.user_name,
+      email: form.value.email,
+      password: form.value.password,
+      confirm_password: form.value.confirm_password,
+    })
+
+
+    console.log('REGISTER SUCCESS:', res.data)
+
+    const token = res.data.token
+    const user = res.data.user
+
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(user))
+
+    // router.push('/dashboard')
+
+  } catch (error: any) {
+    console.error('REGISTER ERROR:', error.response?.data || error)
+    errorMessage.value =
+      error.response?.data?.message || 'ثبت‌نام با خطا مواجه شد.'
+  } finally {
+    isLoading.value = false
   }
 }
-
-// const onSubmit = () => {
-//   refVForm.value?.validate()
-//     .then(({ valid: isValid }) => {
-//       if (isValid)
-//         login()
-//     })
-// }
-
 
 </script>
 
@@ -94,9 +106,9 @@ const register = async () => {
           <VCardTitle>
             <RouterLink to="/">
               <div class="app-logo">
-                <VNodeRenderer :nodes="themeConfig.app.logo" />
+<!--                <VNodeRenderer :nodes="themeConfig.app.logo"/>-->
                 <h1 class="app-logo-title">
-                  {{ themeConfig.app.title }}
+<!--                  {{ themeConfig.app.title }}-->
                 </h1>
               </div>
             </RouterLink>
@@ -105,11 +117,11 @@ const register = async () => {
 
         <VCardText>
           <h4 class="text-h4 mb-1">
-            Adventure starts here 🚀
+            {{$t('Adventure starts here ❤️')}}
           </h4>
-          <p class="mb-0">
-            Make your app management easy and fun!
-          </p>
+<!--          <p class="mb-0">-->
+<!--            Make your app management easy and fun!-->
+<!--          </p>-->
         </VCardText>
 
         <VCardText>
@@ -120,17 +132,17 @@ const register = async () => {
                 <AppTextField
                   v-model="form.user_name"
                   autofocus
-                  label="Username"
-                  placeholder="Johndoe"
+                  :label="$t('Username')"
+                  placeholder="Alireza Monfared"
                 />
               </VCol>
               <!-- email -->
               <VCol cols="12">
                 <AppTextField
                   v-model="form.email"
-                  label="Email"
+                  :label="$t('Email')"
                   type="email"
-                  placeholder="johndoe@email.com"
+                  placeholder="alireza.monfared0430@gmail.com"
                 />
               </VCol>
 
@@ -138,70 +150,87 @@ const register = async () => {
               <VCol cols="12">
                 <AppTextField
                   v-model="form.password"
-                  label="Password"
+                  :label="$t('Password')"
                   placeholder="············"
                   :type="isPasswordVisible ? 'text' : 'password'"
                   autocomplete="password"
                   :append-inner-icon="isPasswordVisible ? 'bx-hide' : 'bx-show'"
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 />
+              </VCol>
 
-                <div class="d-flex align-center my-6">
-                  <VCheckbox
-                    id="privacy-policy"
-                    v-model="form.privacyPolicies"
-                    inline
-                  />
-                  <VLabel
-                    for="privacy-policy"
-                    style="opacity: 1"
-                  >
-                    <span class="me-1 text-high-emphasis">I agree to</span>
-                    <a
-                      href="javascript:void(0)"
-                      class="text-primary"
-                    >privacy policy & terms</a>
-                  </VLabel>
-                </div>
+                <!--                <div class="d-flex align-center my-6">-->
+                <!--                  <VCheckbox-->
+                <!--                    id="privacy-policy"-->
+                <!--                    v-model="form.privacyPolicies"-->
+                <!--                    inline-->
+                <!--                  />-->
+                <!--                  <VLabel-->
+                <!--                    for="privacy-policy"-->
+                <!--                    style="opacity: 1"-->
+                <!--                  >-->
+                <!--                    <span class="me-1 text-high-emphasis">I agree to</span>-->
+                <!--                    <a-->
+                <!--                      href="javascript:void(0)"-->
+                <!--                      class="text-primary"-->
+                <!--                    >privacy policy & terms</a>-->
+                <!--                  </VLabel>-->
+                <!--                </div>-->
 
+              <!-- Confirm Password -->
+              <VCol cols="12">
+                <AppTextField
+                  v-model="form.confirm_password"
+                  :label="$t('Confirm Password')"
+                  placeholder="············"
+                  :type="isConfirmedPasswordVisible ? 'text' : 'password'"
+                  autocomplete="confirm_password"
+                  :append-inner-icon="isConfirmedPasswordVisible ? 'bx-hide' : 'bx-show'"
+                  @click:append-inner="isConfirmedPasswordVisible = !isConfirmedPasswordVisible"
+                />
+              </VCol>
+
+              <VCol cols="12">
                 <VBtn
                   block
                   type="submit"
                 >
-                  Sign up
+                  {{ $t('Sign up') }}
                 </VBtn>
+
               </VCol>
+
 
               <!-- login instead -->
               <VCol
                 cols="12"
                 class="text-center text-base"
               >
-                <span>Already have an account?</span>
+                <span>{{$t('Already have an account?')}}</span>
                 <RouterLink
                   class="text-primary ms-1"
                   :to="{ name: 'login' }"
                 >
-                  Sign in instead
+                  {{$t('Sign in instead')}}
                 </RouterLink>
               </VCol>
 
-              <VCol
-                cols="12"
-                class="d-flex align-center"
-              >
-                <VDivider />
-                <span class="mx-4">or</span>
-                <VDivider />
-              </VCol>
+<!--              <VCol-->
+<!--                cols="12"-->
+<!--                class="d-flex align-center"-->
+<!--              >-->
+<!--                <VDivider/>-->
+<!--                <span class="mx-4">or</span>-->
+<!--                <VDivider/>-->
+<!--              </VCol>-->
 
               <!-- auth providers -->
-              <VCol
-                cols="12"
-                class="text-center"
-              >
-                <AuthProvider />
-              </VCol>
+<!--              <VCol-->
+<!--                cols="12"-->
+<!--                class="text-center"-->
+<!--              >-->
+<!--                <AuthProvider/>-->
+<!--              </VCol>-->
             </VRow>
           </VForm>
         </VCardText>
