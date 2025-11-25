@@ -78,7 +78,7 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
 
   // 👉 Fetch events
   const fetchEvents: EventSourceFunc = (info, successCallback) => {
-  // If there's no info => Don't make useless API call
+    // If there's no info => Don't make useless API call
     if (!info)
       return
 
