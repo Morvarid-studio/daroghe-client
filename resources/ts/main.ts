@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 
 import App from '@/App.vue'
 import { registerPlugins } from '@core/utils/plugins'
+import axios from '@/plugins/axios'
 import '@fortawesome/fontawesome-free/css/all.css'
 
 const link = document.createElement('link')

@@ -29,6 +29,7 @@
     "@vueuse/core": "10.11.1",
     "@vueuse/math": "10.11.1",
     "apexcharts": "3.49.2",
+    "axios": "^1.13.2",
     "chart.js": "4.4.9",
     "cookie-es": "1.2.2",
     "dayjs": "^1.11.19",
