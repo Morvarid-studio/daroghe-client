@@ -19,6 +19,7 @@ export const useConfigStore = defineStore('config', () => {
   )
 
   const theme = cookieRef('theme', themeConfig.app.theme)
+  const dateCalendar = cookieRef<'gregorian' | 'jalali'>('date-calendar', 'jalali')
 
   // 👉 isVerticalNavSemiDark
   const isVerticalNavSemiDark = cookieRef('isVerticalNavSemiDark', themeConfig.verticalNav.isVerticalNavSemiDark)
@@ -40,6 +41,7 @@ export const useConfigStore = defineStore('config', () => {
 
   return {
     theme,
+    dateCalendar,
     isVerticalNavSemiDark,
     skin,
 

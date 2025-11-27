@@ -1,6 +1,8 @@
 import type { RouteNamedMap, _RouterTyped } from 'unplugin-vue-router'
 import { canNavigate } from '@layouts/plugins/casl'
 
+type UserData = Record<string, any> & { profile_completed?: boolean }
+
 export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]: any }>) => {
   // 👉 router.beforeEach
   // Docs: https://router.vuejs.org/guide/advanced/navigation-guards.html#global-before-guards
@@ -9,7 +11,9 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
      * Check if user is logged in by checking if token & user data exists in local storage
      * Feel free to update this logic to suit your needs
      */
-    const isLoggedIn = !!(useCookie('userData').value && useCookie('accessToken').value)
+    const userDataCookie = useCookie<UserData | null>('userData')
+    const isLoggedIn = !!(userDataCookie.value && useCookie('accessToken').value)
+    const isProfileCompleted = !!userDataCookie.value?.profile_completed
 
     /*
       If user is logged in and is trying to access login like page, redirect to dashboard
@@ -20,6 +24,17 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
         return to.meta.redirectIfAuth ?? '/dashboard'
 
       return
+    }
+
+    if (isLoggedIn && !isProfileCompleted && !to.meta.allowIncompleteProfile) {
+      if (to.name !== 'complete-profile') {
+        return {
+          name: 'complete-profile',
+          query: {
+            redirect: to.fullPath !== '/' ? to.fullPath : undefined,
+          },
+        }
+      }
     }
 
     /*
