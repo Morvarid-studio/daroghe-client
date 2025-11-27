@@ -12,6 +12,8 @@ definePage({
   meta: {
     layout: 'blank',
     public: true,
+    unauthenticatedOnly: true,
+    redirectIfAuth: '/dashboard',
   },
 })
 
@@ -47,11 +49,7 @@ const login = async () =>{
     const token = res.data.token
     const user = res.data.user
 
-    // ذخیره توکن و اطلاعات کاربر
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
 
-    // تنظیم کوکی برای گاردهای پروژه پیش‌فرض
     useCookie('accessToken').value = token
     useCookie('userData').value = user
 

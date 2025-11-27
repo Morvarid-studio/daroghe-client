@@ -9,6 +9,8 @@ definePage({
   meta: {
     layout: 'blank',
     public: true,
+    unauthenticatedOnly: true,
+    redirectIfAuth: '/dashboard',
   },
 })
 
