@@ -43,6 +43,12 @@ export const canViewNavMenuGroup = (item: NavGroup) => {
 export const canNavigate = (to: RouteLocationNormalized) => {
   const ability = useAbility()
 
+  // If no ACL rules are set yet, allow navigation (fallback behaviour for projects without ACL setup)
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore CASL ability exposes rules array
+  if (!ability?.rules?.length)
+    return true
+
   // Get the most specific route (last one in the matched array)
   const targetRoute = to.matched[to.matched.length - 1]
 

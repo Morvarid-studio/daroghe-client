@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import api from '@/plugins/axios'
+import api from '@/lib/axios'
 import { useRouter } from 'vue-router'
 import { ref, h } from 'vue'
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
@@ -47,7 +47,16 @@ const login = async () =>{
     const token = res.data.token
     const user = res.data.user
 
-    // router.push('/dashboard')
+    // ذخیره توکن و اطلاعات کاربر
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(user))
+
+    // تنظیم کوکی برای گاردهای پروژه پیش‌فرض
+    useCookie('accessToken').value = token
+    useCookie('userData').value = user
+
+    // رفتن به داشبورد
+    router.push('/dashboard')
   }
   catch(error:any){
   console.log(error)
@@ -150,9 +159,23 @@ const login = async () =>{
                 <VBtn
                   block
                   type="submit"
+                  :loading="isLoading"
+                  :disabled="isLoading"
                 >
                   {{$t('Login')}}
                 </VBtn>
+              </VCol>
+
+              <!-- error message -->
+              <VCol cols="12" v-if="errorMessage">
+                <VAlert
+                  type="error"
+                  variant="tonal"
+                  closable
+                  @click:close="errorMessage = ''"
+                >
+                  {{ errorMessage }}
+                </VAlert>
               </VCol>
 
               <!-- create account -->
