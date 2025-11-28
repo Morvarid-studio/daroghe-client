@@ -192,42 +192,22 @@ const productList = [
             class="text-wrap me-4 text-body-1"
             style="color: #d3d4dc;"
           >
-            &copy;
-
-            {{ new Date().getFullYear() }}
+            کار خودشونه :
             <a
-              href="https://themeselection.com/"
+              href="https://morvaridsudio.ir"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-white ms-1"
+            >مروارید</a>
+          </div>
+
+          <div class="d-flex gap-x-4 text-body-1" style="color: #d3d4dc;">
+            <a
+              href="https://morvaridsudio.ir"
               target="_blank"
               rel="noopener noreferrer"
               class="text-white"
-            >Themeselection</a>,
-            Made With ❤️ for a better web.
-          </div>
-
-          <div class="d-flex gap-x-4 text-body-1">
-            <template
-              v-for="(item, index) in [
-                { title: 'github', icon: 'bx-bxl-github', href: 'https://github.com/themeselection' },
-                { title: 'facebook', icon: 'bx-bxl-facebook', href: 'https://www.facebook.com/ThemeSelections/' },
-                { title: 'twitter', icon: 'bx-bxl-twitter', href: 'https://x.com/Theme_Selection' },
-                { title: 'google', icon: 'bx-bxl-google', href: 'https://www.themeselection.com' },
-              ]"
-              :key="index"
-            >
-              <IconBtn
-                :href="item.href"
-                size="28"
-                target="_blank"
-                color="#fff"
-                rel="noopener noreferrer"
-              >
-                <VIcon
-                  :icon="item.icon"
-                  size="20"
-                  color="white"
-                />
-              </IconBtn>
-            </template>
+            >قوانین و مقررات</a>
           </div>
         </div>
       </VContainer>

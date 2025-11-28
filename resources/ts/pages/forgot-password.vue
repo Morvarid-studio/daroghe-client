@@ -55,11 +55,10 @@ const form = ref({
 
         <VCardText>
           <h4 class="text-h4 mb-1">
-            Forgot Password? 🔒
+            باز یادت رفت
           </h4>
           <p class="mb-0">
-            Enter your email and we'll send you instructions to reset your
-            password
+            ایمیل خود را وارد کنید تا دستورالعمل بازنشانی رمز عبور را برای شما ارسال کنیم
           </p>
         </VCardText>
 
@@ -71,9 +70,9 @@ const form = ref({
                 <AppTextField
                   v-model="form.email"
                   autofocus
-                  label="Email"
+                  label="ایمیل"
                   type="email"
-                  placeholder="johndoe@email.com"
+                  placeholder="example@email.com"
                 />
               </VCol>
 
@@ -83,7 +82,7 @@ const form = ref({
                   block
                   type="submit"
                 >
-                  Send Reset Link
+                  ارسال لینک بازنشانی
                 </VBtn>
               </VCol>
 
@@ -98,7 +97,7 @@ const form = ref({
                     size="20"
                     class="me-1 flip-in-rtl"
                   />
-                  <span>Back to login</span>
+                  <span>بازگشت به ورود</span>
                 </RouterLink>
               </VCol>
             </VRow>

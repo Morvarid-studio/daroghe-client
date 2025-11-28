@@ -5,17 +5,23 @@ const router = useRouter()
 const ability = useAbility()
 
 // TODO: Get type from backend
-const userData = useCookie<any>('userData')
+// بررسی هر دو cookie: user و userData (برای سازگاری)
+const userDataCookie = useCookie<any>('userData')
+const userCookie = useCookie<any>('user')
+
+// استفاده از userData یا user (هر کدام که وجود داشته باشد)
+const userData = computed(() => userDataCookie.value || userCookie.value)
+
+// بررسی وجود userData
+const hasUserData = computed(() => !!userData.value)
 
 const logout = async () => {
   // Remove "accessToken" from cookie
   useCookie('accessToken').value = null
 
   // Remove "userData" from cookie
-  userData.value = null
-
-  // Remove "userData" from cookie
-  userData.value = null
+  userDataCookie.value = null
+  userCookie.value = null
 
   // Redirect to login page
   await router.push('/login')
@@ -33,49 +39,13 @@ const logout = async () => {
   ability.update([])
 }
 
-const userProfileList = [
-  { type: 'divider' },
-  {
-    type: 'navItem',
-    icon: 'bx-user',
-    title: 'Profile',
-    to: { name: 'apps-user-view-id', params: { id: 21 } },
-  },
-  {
-    type: 'navItem',
-    icon: 'bx-cog',
-    title: 'Settings',
-    to: { name: 'pages-account-settings-tab', params: { tab: 'account' } },
-  },
-  {
-    type: 'navItem',
-    icon: 'bx-credit-card',
-    title: 'Billing Plan',
-    to: {
-      name: 'pages-account-settings-tab',
-      params: { tab: 'billing-plans' },
-    },
-    badgeProps: { color: 'error', content: '4' },
-  },
-  { type: 'divider' },
-  {
-    type: 'navItem',
-    icon: 'bx-dollar',
-    title: 'Pricing',
-    to: { name: 'pages-pricing' },
-  },
-  {
-    type: 'navItem',
-    icon: 'bx-help-circle',
-    title: 'FAQ',
-    to: { name: 'pages-faq' },
-  },
-]
+// فعلا لینک تنظیمات را حذف می‌کنیم چون route وجود ندارد
+const userProfileList: any[] = []
 </script>
 
 <template>
   <VBadge
-    v-if="userData"
+    v-if="hasUserData"
     dot
     bordered
     location="bottom right"
@@ -86,11 +56,11 @@ const userProfileList = [
     <VAvatar
       size="38"
       class="cursor-pointer"
-      :color="!(userData && userData.avatar) ? 'primary' : undefined"
-      :variant="!(userData && userData.avatar) ? 'tonal' : undefined"
+      :color="!(userData?.avatar) ? 'primary' : undefined"
+      :variant="!(userData?.avatar) ? 'tonal' : undefined"
     >
       <VImg
-        v-if="userData && userData.avatar"
+        v-if="userData?.avatar"
         :src="userData.avatar"
       />
       <VIcon
@@ -98,13 +68,14 @@ const userProfileList = [
         icon="bx-user"
       />
 
-      <!-- SECTION Menu -->
       <VMenu
         activator="parent"
         width="240"
         location="bottom end"
         offset="20px"
       >
+
+    <!-- SECTION Menu -->
         <VList>
           <VListItem>
             <div class="d-flex gap-2 align-center">
@@ -119,14 +90,14 @@ const userProfileList = [
                 >
                   <VAvatar
                     :color="
-                      !(userData && userData.avatar) ? 'primary' : undefined
+                      !(userData?.avatar) ? 'primary' : undefined
                     "
                     :variant="
-                      !(userData && userData.avatar) ? 'tonal' : undefined
+                      !(userData?.avatar) ? 'tonal' : undefined
                     "
                   >
                     <VImg
-                      v-if="userData && userData.avatar"
+                      v-if="userData?.avatar"
                       :src="userData.avatar"
                     />
                     <VIcon
@@ -138,10 +109,10 @@ const userProfileList = [
               </VListItemAction>
               <div>
                 <VListItemTitle class="font-weight-medium">
-                  {{ userData.fullName || userData.username }}
+                  {{ userData?.fullName || userData?.username || userData?.user_name || 'کاربر' }}
                 </VListItemTitle>
                 <VListItemSubtitle class="text-disabled text-capitalize">
-                  {{ userData.role }}
+                  {{ userData?.role || 'کاربر' }}
                 </VListItemSubtitle>
               </div>
             </div>
@@ -187,12 +158,11 @@ const userProfileList = [
               prepend-icon="bx-power-off"
               @click="logout"
             >
-              Logout
+              خروج از حساب
             </VListItem>
           </PerfectScrollbar>
         </VList>
       </VMenu>
-      <!-- !SECTION -->
     </VAvatar>
   </VBadge>
 </template>

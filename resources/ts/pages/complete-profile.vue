@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/lib/axios'
 
@@ -31,8 +31,8 @@ const defaultForm = {
   marital_status: '',
   profession: '',
   languages: '',
-  resume: '',
-  profile_photo: '',
+  resume: null as File | null,
+  profile_photo: null as File | null,
 }
 
 const cloneDefaultForm = () => JSON.parse(JSON.stringify(defaultForm))
@@ -41,30 +41,25 @@ const form = ref(cloneDefaultForm())
 const isSubmitting = ref(false)
 const savedMessage = ref('')
 const errorMessage = ref('')
+const profilePhotoPreview = ref<string | null>(null)
 
 const genderOptions = [
   { title: 'مرد', value: 'Male' },
   { title: 'زن', value: 'Female' },
 ]
 
-const militaryOptions = [
-  { title: 'مشمول', value: 'Conscription Pending' },
-  { title: 'معاف', value: 'Exempted' },
-  { title: 'پایان خدمت', value: 'Completed' },
-  { title: 'خانم هستم', value: 'Female' },
-]
-
 const degreeOptions = [
   { title: 'دیپلم', value: 'Diploma' },
-  { title: 'کاردانی', value: 'Associate Degree' },
-  { title: 'کارشناسی', value: 'Bachelor of Computer Engineering' },
-  { title: 'کارشناسی ارشد', value: 'Master of Computer Engineering' },
-  { title: 'دکتری', value: 'PhD of Computer Engineering' },
+  { title: 'کاردانی', value: 'Associate' },
+  { title: 'لیسانس', value: 'Bachelor' },
+  { title: 'فوق لیسانس', value: 'Master' },
+  { title: 'دکترا', value: 'PhD' },
 ]
 
 const educationStatusOptions = [
   { title: 'در حال تحصیل', value: 'Studying' },
   { title: 'فارغ‌التحصیل', value: 'Graduated' },
+  { title: 'انصراف داده', value: 'Dropped' },
 ]
 
 const maritalStatusOptions = [
@@ -72,10 +67,26 @@ const maritalStatusOptions = [
   { title: 'متأهل', value: 'Married' },
 ]
 
+const militaryOptions = [
+  { title: 'پایان خدمت', value: 'Completed' },
+  { title: 'معاف', value: 'Exempt' },
+  { title: 'در حال خدمت', value: 'Serving' },
+  { title: 'معافیت پزشکی', value: 'MedicalExempt' },
+  { title: 'معافیت تحصیلی', value: 'EducationalExempt' },
+  { title: 'معافیت کفالت', value: 'CustodyExempt' },
+  { title: 'معافیت تک‌پسر', value: 'OnlySonExempt' },
+]
+
 const sanitizeDigits = (value: string) => value.replace(/\D/g, '')
 
 const handlePhoneInput = (field: 'phone' | 'emergency_contact_number') => {
-  form.value[field] = sanitizeDigits(form.value[field]).slice(0, 15)
+  if (field === 'phone') {
+    // برای phone فقط 11 رقم (09xxxxxxxxx)
+    form.value[field] = sanitizeDigits(form.value[field]).slice(0, 11)
+  } else {
+    // برای emergency_contact_number هم 11 رقم
+    form.value[field] = sanitizeDigits(form.value[field]).slice(0, 11)
+  }
 }
 
 const redirectTarget = computed(() => {
@@ -88,7 +99,12 @@ const persistForm = () => {
   if (typeof window === 'undefined')
     return
 
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(form.value))
+  // فایل‌ها رو در localStorage ذخیره نمی‌کنیم
+  const formDataToSave = { ...form.value }
+  formDataToSave.resume = null
+  formDataToSave.profile_photo = null
+
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formDataToSave))
 }
 
 const loadDraft = () => {
@@ -117,6 +133,27 @@ onMounted(() => {
 
 watch(form, persistForm, { deep: true })
 
+// Watch برای preview عکس پروفایل
+watch(() => form.value.profile_photo, (newFile) => {
+  // Cleanup URL قبلی
+  if (profilePhotoPreview.value) {
+    URL.revokeObjectURL(profilePhotoPreview.value)
+    profilePhotoPreview.value = null
+  }
+
+  // ایجاد URL جدید برای preview
+  if (newFile instanceof File) {
+    profilePhotoPreview.value = URL.createObjectURL(newFile)
+  }
+}, { immediate: true })
+
+// Cleanup در unmount
+onUnmounted(() => {
+  if (profilePhotoPreview.value) {
+    URL.revokeObjectURL(profilePhotoPreview.value)
+  }
+})
+
 const markProfileCompleted = () => {
   const userCookie = useCookie('userData')
 
@@ -125,17 +162,35 @@ const markProfileCompleted = () => {
 }
 
 const buildPayload = () => {
-  const entries = Object.entries(form.value).map(([key, value]) => {
-    if (typeof value === 'string') {
-      const trimmedValue = value.trim()
+  const formData = new FormData()
 
-      return [key, trimmedValue.length ? trimmedValue : null]
+  // اضافه کردن فیلدهای متنی
+  Object.entries(form.value).forEach(([key, value]) => {
+    if (key === 'resume' || key === 'profile_photo') {
+      // فایل‌ها رو بعداً اضافه می‌کنیم
+      return
     }
 
-    return [key, value ?? null]
+    if (typeof value === 'string') {
+      const trimmedValue = value.trim()
+      if (trimmedValue.length > 0) {
+        formData.append(key, trimmedValue)
+      }
+    } else if (value !== null && value !== undefined && value !== '') {
+      formData.append(key, String(value))
+    }
   })
 
-  return Object.fromEntries(entries)
+  // اضافه کردن فایل‌ها
+  if (form.value.resume instanceof File) {
+    formData.append('resume', form.value.resume)
+  }
+
+  if (form.value.profile_photo instanceof File) {
+    formData.append('profile_photo', form.value.profile_photo)
+  }
+
+  return formData
 }
 
 const submit = async () => {
@@ -146,6 +201,7 @@ const submit = async () => {
   try {
     const payload = buildPayload()
 
+    // برای FormData باید Content-Type رو خود axios set کنه
     await api.post('/api/updateinformation', payload)
 
     markProfileCompleted()
@@ -290,7 +346,7 @@ const submit = async () => {
                   placeholder="09123456789"
                   type="tel"
                   inputmode="numeric"
-                  maxlength="15"
+                  maxlength="11"
                   @input="handlePhoneInput('phone')"
                 />
               </VCol>
@@ -350,26 +406,41 @@ const submit = async () => {
                   placeholder="09119876543"
                   type="tel"
                   inputmode="numeric"
-                  maxlength="15"
+                  maxlength="11"
                   @input="handlePhoneInput('emergency_contact_number')"
                 />
               </VCol>
 
               <VCol cols="12">
-                <VTextarea
+                <AppFileInput
                   v-model="form.resume"
-                  label="رزومه (لینک یا خلاصه)"
-                  hint="در صورت نیاز می‌توانید لینک رزومه را وارد کنید."
-                  rows="3"
+                  label="رزومه"
+                  accept=".pdf,.doc,.docx"
+                  hint="فایل PDF یا Word (حداکثر 2MB)"
+                  show-size
                 />
               </VCol>
 
               <VCol cols="12">
-                <VTextarea
+                <AppFileInput
                   v-model="form.profile_photo"
-                  label="عکس پروفایل (لینک یا توضیح)"
-                  rows="2"
+                  label="عکس پروفایل"
+                  accept="image/*"
+                  hint="فایل تصویری JPG, PNG یا JPEG (حداکثر 2MB)"
+                  show-size
                 />
+                <div
+                  v-if="profilePhotoPreview"
+                  class="mt-4"
+                >
+                  <VImg
+                    :src="profilePhotoPreview"
+                    max-width="200"
+                    max-height="200"
+                    class="rounded"
+                    cover
+                  />
+                </div>
               </VCol>
 
               <VCol cols="12">
