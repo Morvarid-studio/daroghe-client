@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import CrmCustomerRatings from '@/views/dashboards/crm/CrmCustomerRatings.vue'
-import CrmCustomerTable from '@/views/dashboards/crm/CrmCustomerTable.vue'
-import CrmEarningReport from '@/views/dashboards/crm/CrmEarningReport.vue'
-import CrmGeneratedLeads from '@/views/dashboards/crm/CrmGeneratedLeads.vue'
-import CrmSalesActivity from '@/views/dashboards/crm/CrmSalesActivity.vue'
-import CrmSalesAnalytics from '@/views/dashboards/crm/CrmSalesAnalytics.vue'
-import CrmSalesStats from '@/views/dashboards/crm/CrmSalesStats.vue'
-import CrmSession from '@/views/dashboards/crm/CrmSessions.vue'
-import CrmTeamMembers from '@/views/dashboards/crm/CrmTeamMembers.vue'
-import CrmTopProducts from '@/views/dashboards/crm/CrmTopProducts.vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useTheme } from 'vuetify'
+import { hexToRgb } from '@core/utils/colorConverter'
+import api from '@/lib/axios'
+import illustrationJohn from '@images/illustrations/illustration-john.png'
+import moment from 'jalali-moment'
 
 definePage({
   meta: {
@@ -16,84 +13,530 @@ definePage({
     requiresAuth: true,
   },
 })
+
+const router = useRouter()
+const vuetifyTheme = useTheme()
+
+// داده‌های نمودار
+const dailyWorkHours = ref<any[]>([])
+const isLoadingChart = ref(false)
+
+// تبدیل تاریخ میلادی به شمسی
+const formatToJalali = (dateString: string) => {
+  if (!dateString) return ''
+  try {
+    const momentDate = moment(dateString, 'YYYY-MM-DD')
+    if (momentDate.isValid()) {
+      return momentDate.format('jYYYY/jMM/jDD')
+    }
+    return dateString
+  }
+  catch (error) {
+    console.error('Error converting date to jalali:', error)
+    return dateString
+  }
+}
+
+// دریافت نام روز شمسی به فارسی
+const getDayName = (dateString: string) => {
+  if (!dateString) return ''
+  try {
+    const date = new Date(dateString)
+    const dayIndex = date.getDay()
+    
+    // تبدیل index روز میلادی به نام روز فارسی
+    const persianDays = ['یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه']
+    // در JavaScript: 0=Sunday, 1=Monday, ... 6=Saturday
+    // در تقویم شمسی: 0=شنبه, 1=یک‌شنبه, ... 6=جمعه
+    // پس باید یک روز جابجا کنیم
+    const persianDayIndex = (dayIndex + 1) % 7
+    
+    return persianDays[persianDayIndex]
+  }
+  catch (error) {
+    return ''
+  }
+}
+
+// محاسبه 7 روز اخیر و گروه‌بندی داده‌ها
+const calculateLastSevenDays = (worklogs: any[]) => {
+  console.log('=== calculateLastSevenDays START ===')
+  console.log('Input worklogs:', worklogs)
+  console.log('Worklogs count:', worklogs.length)
+  
+  const today = new Date()
+  today.setHours(0, 0, 0, 0) // تنظیم به ابتدای روز
+  
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(today.getDate() - 6) // 6 روز قبل + امروز = 7 روز
+
+  console.log('Today:', today.toISOString())
+  console.log('Seven days ago:', sevenDaysAgo.toISOString())
+
+  // ایجاد ساختار برای 7 روز اخیر
+  const daysMap: Record<string, { date: string; shamsi_date: string; day_name: string; total_hours: number }> = {}
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(sevenDaysAgo)
+    date.setDate(sevenDaysAgo.getDate() + i)
+    date.setHours(0, 0, 0, 0)
+    
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
+    
+    const shamsiDate = formatToJalali(dateStr)
+    const dayName = getDayName(dateStr)
+    
+    daysMap[dateStr] = {
+      date: dateStr,
+      shamsi_date: shamsiDate,
+      day_name: dayName,
+      total_hours: 0,
+    }
+    
+    console.log(`Day ${i}: ${dateStr} -> ${dayName}`)
+  }
+
+  console.log('Days map keys:', Object.keys(daysMap))
+
+  // جمع‌آوری ساعات کاری
+  worklogs.forEach((log) => {
+    console.log('Processing log:', {
+      work_date: log.work_date,
+      work_hours: log.work_hours,
+      existsInMap: log.work_date && daysMap[log.work_date] ? 'YES' : 'NO',
+    })
+    
+    if (log.work_date && daysMap[log.work_date]) {
+      const hours = parseFloat(log.work_hours) || 0
+      daysMap[log.work_date].total_hours += hours
+      console.log(`Added ${hours} hours to ${log.work_date}. New total: ${daysMap[log.work_date].total_hours}`)
+    } else if (log.work_date) {
+      console.warn(`Date ${log.work_date} not found in daysMap!`)
+    }
+  })
+
+  // تبدیل به آرایه و مرتب‌سازی بر اساس تاریخ
+  const result = Object.values(daysMap).sort((a, b) => a.date.localeCompare(b.date))
+  console.log('Final result:', result)
+  console.log('=== calculateLastSevenDays END ===')
+  
+  return result
+}
+
+// دریافت داده‌های worklogs و محاسبه
+const fetchWorklogs = async () => {
+  console.log('=== fetchWorklogs START ===')
+  isLoadingChart.value = true
+  try {
+    console.log('Fetching from /api/worklogs...')
+    const response = await api.get('/api/worklogs')
+    console.log('API Response:', response)
+    console.log('Response data:', response.data)
+    console.log('Response data type:', typeof response.data)
+    console.log('Is array?', Array.isArray(response.data))
+    
+    const worklogs = response.data || []
+    console.log('Worklogs after processing:', worklogs)
+    console.log('Worklogs length:', worklogs.length)
+    
+    if (worklogs.length > 0) {
+      console.log('First worklog sample:', worklogs[0])
+      console.log('First worklog work_date:', worklogs[0].work_date)
+      console.log('First worklog work_hours:', worklogs[0].work_hours)
+    }
+    
+    // محاسبه 7 روز اخیر
+    const calculated = calculateLastSevenDays(worklogs)
+    console.log('Calculated daily work hours:', calculated)
+    console.log('Calculated length:', calculated.length)
+    
+    dailyWorkHours.value = calculated
+    console.log('dailyWorkHours.value set to:', dailyWorkHours.value)
+  }
+  catch (error: any) {
+    console.error('=== ERROR in fetchWorklogs ===')
+    console.error('Error object:', error)
+    console.error('Error message:', error.message)
+    console.error('Error response:', error.response)
+    if (error.response) {
+      console.error('Error response data:', error.response.data)
+      console.error('Error response status:', error.response.status)
+    }
+    dailyWorkHours.value = []
+  }
+  finally {
+    isLoadingChart.value = false
+    console.log('=== fetchWorklogs END ===')
+  }
+}
+
+// محاسبه مجموع ساعات امروز
+const todayWorkHours = computed(() => {
+  if (!dailyWorkHours.value || dailyWorkHours.value.length === 0) return 0
+  
+  // آخرین روز (امروز) را پیدا می‌کنیم
+  const today = dailyWorkHours.value[dailyWorkHours.value.length - 1]
+  return today?.total_hours || 0
+})
+
+// محاسبه مجموع ساعات هفته
+const weekTotalHours = computed(() => {
+  if (!dailyWorkHours.value || dailyWorkHours.value.length === 0) return 0
+  return dailyWorkHours.value.reduce((sum, day) => sum + (day.total_hours || 0), 0)
+})
+
+// فرمت عدد برای نمایش
+const formatHoursNumber = (hours: number) => {
+  if (hours === 0) return '0'
+  if (hours < 1) {
+    const minutes = Math.round(hours * 60)
+    return `${minutes}د`
+  }
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  if (m === 0) {
+    return `${h}س`
+  }
+  return `${h}.${Math.round(m / 6)}س`
+}
+
+// فرمت ساعت کاری
+const formatWorkHours = (hours: number) => {
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  
+  if (m === 0) {
+    return `${h} ساعت`
+  }
+  if (h === 0) {
+    return `${m} دقیقه`
+  }
+  return `${h} ساعت و ${m} دقیقه`
+}
+
+// تنظیمات نمودار خطی (برای کارت Total Balance)
+const lineChartSeries = computed(() => {
+  const data = dailyWorkHours.value.map(day => parseFloat((day.total_hours || 0).toFixed(2)))
+  console.log('lineChartSeries computed - dailyWorkHours.value:', dailyWorkHours.value)
+  console.log('lineChartSeries computed - data:', data)
+  
+  return [
+    {
+      name: 'ساعات کاری',
+      data: data,
+    },
+  ]
+})
+
+const lineChartOptions = computed(() => {
+  const currentTheme = vuetifyTheme.current.value.colors
+  const variableTheme = vuetifyTheme.current.value.variables
+  const disabledTextColor = `rgba(${hexToRgb(String(currentTheme['on-surface']))},${variableTheme['disabled-opacity']})`
+  const categories = dailyWorkHours.value.map(day => day.day_name || '')
+  const dataLength = lineChartSeries.value[0]?.data?.length || 0
+  
+  return {
+    chart: {
+      parentHeightOffset: 0,
+      toolbar: { show: false },
+      dropShadow: {
+        top: 15,
+        blur: 5,
+        left: 0,
+        opacity: 0.1,
+        enabled: true,
+        color: currentTheme.primary,
+      },
+    },
+    grid: {
+      show: false,
+      padding: {
+        left: 0,
+        top: -20,
+        bottom: 3,
+      },
+    },
+    legend: { show: false },
+    colors: [`rgba(${hexToRgb(String(currentTheme.primary))}, 1)`],
+    markers: {
+      size: 8,
+      strokeWidth: 6,
+      strokeOpacity: 1,
+      hover: { size: 8 },
+      colors: ['transparent'],
+      strokeColors: 'transparent',
+      discrete: dataLength > 0 ? [
+        {
+          size: 8,
+          seriesIndex: 0,
+          fillColor: '#fff',
+          strokeColor: currentTheme.primary,
+          dataPointIndex: dataLength - 1,
+        },
+      ] : [],
+    },
+    stroke: {
+      width: 4,
+      curve: 'smooth',
+      lineCap: 'round',
+    },
+    xaxis: {
+      axisTicks: { show: false },
+      axisBorder: { show: false },
+      categories: categories,
+      labels: {
+        style: {
+          fontSize: '13px',
+          colors: disabledTextColor,
+          fontFamily: 'IRANSansX, BNazanin, Tahoma, sans-serif',
+        },
+      },
+    },
+    yaxis: {
+      labels: { show: false },
+    },
+    tooltip: {
+      theme: 'dark',
+      y: {
+        formatter: (val: number) => formatWorkHours(val),
+      },
+    },
+  }
+})
+
+
+onMounted(() => {
+  fetchWorklogs()
+})
 </script>
 
 <template>
-  <VRow class="match-height">
-    <VCol
-      cols="12"
-      lg="8"
-    >
-      <CrmSalesAnalytics />
-    </VCol>
-
-    <VCol
-      cols="12"
-      lg="4"
-    >
-      <CrmCustomerRatings />
-    </VCol>
-
+  <VRow>
+    <!-- کارت تبریک/انگیزشی -->
     <VCol
       cols="12"
       md="6"
-      lg="4"
     >
-      <CrmSalesStats />
+      <VCard class="text-center text-sm-start">
+        <VRow no-gutters>
+          <VCol
+            cols="12"
+            sm="8"
+            order="2"
+            order-sm="1"
+          >
+            <VCardItem class="pb-3">
+              <VCardTitle class="text-primary">
+                امروز چقدر کار کردی؟
+              </VCardTitle>
+            </VCardItem>
+
+            <VCardText>
+              <div class="mb-2">
+                برای دریافت جیره و مواجب میزان کار خود را وارد کنید
+              </div>
+              <VBtn
+                color="primary"
+                variant="elevated"
+                class="mt-4"
+                @click="router.push('/work-hours/add')"
+              >
+                ثبت ساعات کاری
+              </VBtn>
+            </VCardText>
+          </VCol>
+
+          <VCol
+            cols="12"
+            sm="4"
+            order="1"
+            order-sm="2"
+            class="text-center"
+          >
+            <img
+              :src="illustrationJohn"
+              :height="$vuetify.display.xs ? '150' : '182'"
+              :class="$vuetify.display.xs ? 'mt-6 mb-n2' : 'position-absolute'"
+              class="john-illustration flip-in-rtl"
+              alt="کارگر"
+            >
+          </VCol>
+        </VRow>
+      </VCard>
+
+      <!-- کارت‌های KPI: مانده تنخواه و حقوق ماه -->
+      <VRow class="mt-4">
+        <!-- مانده تنخواه -->
+        <VCol
+          cols="12"
+          sm="6"
+        >
+          <VCard>
+            <VCardText>
+              <div class="d-flex align-center justify-space-between mb-4">
+                <VAvatar
+                  icon="bx-wallet"
+                  color="success"
+                  size="48"
+                  rounded
+                  variant="tonal"
+                />
+                <MoreBtn />
+              </div>
+              <div class="text-base text-medium-emphasis mb-1">
+                مانده تنخواه
+              </div>
+              <h4 class="text-h4 mb-3">
+                12,628,000
+              </h4>
+              <div class="d-flex align-center gap-2">
+                <VIcon
+                  size="20"
+                  icon="bx-chevron-up"
+                  color="success"
+                />
+                <span class="text-sm text-success font-weight-medium">
+                  72.8%
+                </span>
+              </div>
+            </VCardText>
+          </VCard>
+        </VCol>
+
+        <!-- حقوق ماه -->
+        <VCol
+          cols="12"
+          sm="6"
+        >
+          <VCard>
+            <VCardText>
+              <div class="d-flex align-center justify-space-between mb-4">
+                <VAvatar
+                  icon="bx-money"
+                  color="primary"
+                  size="48"
+                  rounded
+                  variant="tonal"
+                />
+                <MoreBtn />
+              </div>
+              <div class="text-base text-medium-emphasis mb-1">
+                حقوق ماه
+              </div>
+              <h4 class="text-h4 mb-3">
+                4,679,000
+              </h4>
+              <div class="d-flex align-center gap-2">
+                <VIcon
+                  size="20"
+                  icon="bx-chevron-up"
+                  color="success"
+                />
+                <span class="text-sm text-success font-weight-medium">
+                  28.42%
+                </span>
+              </div>
+            </VCardText>
+          </VCard>
+        </VCol>
+      </VRow>
     </VCol>
 
+    <!-- کارت Total Balance برای ساعات کاری -->
     <VCol
       cols="12"
       md="6"
-      lg="4"
     >
-      <CrmSalesActivity />
+      <VCard title="مجموع ساعات کاری">
+        <VCardText class="pb-2">
+          <div class="d-flex align-center flex-wrap gap-x-14 mb-8">
+            <div class="d-flex align-center gap-3">
+              <VAvatar
+                icon="bx-time"
+                color="primary"
+                size="40"
+                rounded
+                variant="tonal"
+              />
+              <div>
+                <h6 class="text-h6">
+                  {{ formatHoursNumber(todayWorkHours) }}
+                </h6>
+                <span class="text-base d-inline-block">امروز</span>
+              </div>
+            </div>
+            <div class="d-flex align-center gap-3">
+              <VAvatar
+                icon="bx-calendar-week"
+                color="success"
+                size="40"
+                rounded
+                variant="tonal"
+              />
+              <div>
+                <h6 class="text-h6">
+                  {{ formatHoursNumber(weekTotalHours) }}
+                </h6>
+                <span class="text-base d-inline-block">هفته</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="isLoadingChart"
+            class="text-center py-8"
+          >
+            <VProgressCircular
+              indeterminate
+              color="primary"
+              size="32"
+            />
+          </div>
+
+          <template v-else>
+            <div class="mb-2 text-caption text-medium-emphasis">
+              Debug: dailyWorkHours.length = {{ dailyWorkHours.length }}, 
+              series data length = {{ lineChartSeries[0]?.data?.length || 0 }}
+            </div>
+            
+            <VueApexCharts
+              v-if="dailyWorkHours.length > 0 && lineChartSeries[0]?.data?.length > 0"
+              type="line"
+              :height="217"
+              :options="lineChartOptions"
+              :series="lineChartSeries"
+            />
+
+            <div
+              v-else
+              class="text-center py-8"
+            >
+              <VIcon
+                size="48"
+                icon="bx-line-chart"
+                class="text-medium-emphasis mb-2"
+              />
+              <p class="text-body-2 text-medium-emphasis">
+                داده‌ای برای نمایش وجود ندارد
+              </p>
+              <p class="text-caption text-medium-emphasis mt-2">
+                dailyWorkHours: {{ JSON.stringify(dailyWorkHours) }}
+              </p>
+            </div>
+          </template>
+        </VCardText>
+      </VCard>
     </VCol>
 
-    <VCol
-      cols="12"
-      lg="4"
-    >
-      <CrmGeneratedLeads />
-    </VCol>
-
-    <VCol
-      cols="12"
-      md="6"
-      lg="4"
-    >
-      <CrmEarningReport />
-    </VCol>
-
-    <VCol
-      cols="12"
-      md="6"
-      lg="4"
-    >
-      <CrmSession />
-    </VCol>
-
-    <VCol
-      cols="12"
-      md="6"
-      lg="4"
-    >
-      <CrmTopProducts />
-    </VCol>
-
-    <VCol
-      cols="12"
-      md="6"
-      lg="4"
-    >
-      <CrmTeamMembers />
-    </VCol>
-
-    <VCol cols="12">
-      <CrmCustomerTable />
-    </VCol>
   </VRow>
 </template>
 
-
-
+<style lang="scss" scoped>
+.john-illustration {
+  inset-block-end: -0.125rem;
+  inset-inline-end: 3.5rem;
+}
+</style>

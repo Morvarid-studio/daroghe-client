@@ -49,7 +49,7 @@ const actionArrowInitialRotation = configStore.isVerticalNavCollapsed ? '180deg'
           />
         </IconBtn>
 
-        <NavSearchBar class="ms-lg-n3" />
+        <!-- <NavSearchBar class="ms-lg-n3" /> -->
 
         <VSpacer />
 

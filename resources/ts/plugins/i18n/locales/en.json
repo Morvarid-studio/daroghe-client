@@ -157,6 +157,8 @@
   "Academy": "Academy",
   "Logistics": "Logistics",
   "Dashboard": "Dashboard",
+  "داشبورد": "Dashboard",
+  "ساعات کاری": "Work Hours",
   "Fleet": "Fleet",
   "5": "5",
   "10": "10",
@@ -183,6 +185,11 @@
       "prevPage": "Previous Page",
       "nextPage": "Next Page",
       "lastPage": "Last Page"
+    },
+    "dataIterator": {
+      "loadingText": "Loading... Please wait",
+      "noResultsText": "No results found",
+      "noDataText": "No data available"
     },
     "pagination": {
       "ariaLabel": {

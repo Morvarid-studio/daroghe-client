@@ -31,7 +31,7 @@ import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
       </RouterLink>
       <VSpacer />
 
-      <NavSearchBar trigger-btn-class="ms-lg-n3" />
+      <!-- <NavSearchBar trigger-btn-class="ms-lg-n3" /> -->
 
       <!-- آیکون‌های مخفی شده (فعلا نیازی نیست) -->
       <!-- <NavBarI18n
