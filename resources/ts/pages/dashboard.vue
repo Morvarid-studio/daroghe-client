@@ -21,7 +21,7 @@ const vuetifyTheme = useTheme()
 const dailyWorkHours = ref<any[]>([])
 const isLoadingChart = ref(false)
 
-// تبدیل تاریخ میلادی به شمسی
+// تبدیل تاریخ میلادی به شمسی (برای موارد خاص)
 const formatToJalali = (dateString: string) => {
   if (!dateString) return ''
   try {
@@ -37,89 +37,110 @@ const formatToJalali = (dateString: string) => {
   }
 }
 
-// دریافت نام روز شمسی به فارسی
-const getDayName = (dateString: string) => {
-  if (!dateString) return ''
+// دریافت نام روز شمسی از تاریخ شمسی
+const getDayNameFromShamsi = (shamsiDate: string) => {
+  if (!shamsiDate) return ''
   try {
-    const date = new Date(dateString)
-    const dayIndex = date.getDay()
+    // تبدیل تاریخ شمسی به میلادی برای محاسبه روز هفته
+    const momentDate = moment(shamsiDate, 'jYYYY/jMM/jDD')
+    if (!momentDate.isValid()) {
+      return ''
+    }
+    
+    // تبدیل به میلادی و گرفتن روز هفته
+    const gregorianDate = momentDate.toDate()
+    const dayIndex = gregorianDate.getDay()
     
     // تبدیل index روز میلادی به نام روز فارسی
     const persianDays = ['یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه']
     // در JavaScript: 0=Sunday, 1=Monday, ... 6=Saturday
     // در تقویم شمسی: 0=شنبه, 1=یک‌شنبه, ... 6=جمعه
-    // پس باید یک روز جابجا کنیم
     const persianDayIndex = (dayIndex + 1) % 7
     
     return persianDays[persianDayIndex]
   }
   catch (error) {
+    console.error('Error getting day name from shamsi date:', error)
     return ''
   }
 }
 
-// محاسبه 7 روز اخیر و گروه‌بندی داده‌ها
+// محاسبه 7 روز اخیر و گروه‌بندی داده‌ها (با تاریخ شمسی)
 const calculateLastSevenDays = (worklogs: any[]) => {
   console.log('=== calculateLastSevenDays START ===')
   console.log('Input worklogs:', worklogs)
   console.log('Worklogs count:', worklogs.length)
   
-  const today = new Date()
-  today.setHours(0, 0, 0, 0) // تنظیم به ابتدای روز
-  
-  const sevenDaysAgo = new Date(today)
-  sevenDaysAgo.setDate(today.getDate() - 6) // 6 روز قبل + امروز = 7 روز
+  // گرفتن تاریخ امروز به صورت شمسی
+  const todayShamsi = moment().format('jYYYY/jMM/jDD')
+  const todayMoment = moment(todayShamsi, 'jYYYY/jMM/jDD')
 
-  console.log('Today:', today.toISOString())
-  console.log('Seven days ago:', sevenDaysAgo.toISOString())
+  console.log('Today (Shamsi):', todayShamsi)
 
-  // ایجاد ساختار برای 7 روز اخیر
+  // ایجاد ساختار برای 7 روز اخیر (شمسی)
   const daysMap: Record<string, { date: string; shamsi_date: string; day_name: string; total_hours: number }> = {}
   
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(sevenDaysAgo)
-    date.setDate(sevenDaysAgo.getDate() + i)
-    date.setHours(0, 0, 0, 0)
+  for (let i = 6; i >= 0; i--) {
+    // محاسبه تاریخ i روز قبل (از 6 روز قبل تا امروز)
+    const targetMoment = moment(todayMoment).subtract(i, 'days')
+    const shamsiDate = targetMoment.format('jYYYY/jMM/jDD')
+    const dayName = getDayNameFromShamsi(shamsiDate)
     
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const dateStr = `${year}-${month}-${day}`
-    
-    const shamsiDate = formatToJalali(dateStr)
-    const dayName = getDayName(dateStr)
-    
-    daysMap[dateStr] = {
-      date: dateStr,
+    daysMap[shamsiDate] = {
+      date: shamsiDate, // استفاده از تاریخ شمسی به عنوان key
       shamsi_date: shamsiDate,
       day_name: dayName,
       total_hours: 0,
     }
     
-    console.log(`Day ${i}: ${dateStr} -> ${dayName}`)
+    console.log(`Day ${i}: ${shamsiDate} -> ${dayName}`)
   }
 
-  console.log('Days map keys:', Object.keys(daysMap))
+  console.log('Days map keys (Shamsi):', Object.keys(daysMap))
 
-  // جمع‌آوری ساعات کاری
+  // جمع‌آوری ساعات کاری (work_date از سرور شمسی هست)
   worklogs.forEach((log) => {
+    // فرمت کردن work_date برای اطمینان از فرمت یکسان
+    let workDate = log.work_date || ''
+    
+    // اگر تاریخ به صورت ISO 8601 هست، فقط قسمت تاریخ رو بگیر
+    if (workDate.includes('T')) {
+      const datePart = workDate.split('T')[0]
+      // اگر سال شمسی هست (مثلاً 1404-09-11)، به فرمت Y/m/d تبدیل می‌کنیم
+      if (datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        workDate = datePart.replace(/-/g, '/')
+      } else {
+        workDate = datePart
+      }
+    } else if (workDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // اگر به فرمت Y-m-d هست، به Y/m/d تبدیل می‌کنیم
+      workDate = workDate.replace(/-/g, '/')
+    }
+    
     console.log('Processing log:', {
-      work_date: log.work_date,
+      original_work_date: log.work_date,
+      formatted_work_date: workDate,
       work_hours: log.work_hours,
-      existsInMap: log.work_date && daysMap[log.work_date] ? 'YES' : 'NO',
+      existsInMap: workDate && daysMap[workDate] ? 'YES' : 'NO',
     })
     
-    if (log.work_date && daysMap[log.work_date]) {
+    if (workDate && daysMap[workDate]) {
       const hours = parseFloat(log.work_hours) || 0
-      daysMap[log.work_date].total_hours += hours
-      console.log(`Added ${hours} hours to ${log.work_date}. New total: ${daysMap[log.work_date].total_hours}`)
-    } else if (log.work_date) {
-      console.warn(`Date ${log.work_date} not found in daysMap!`)
+      daysMap[workDate].total_hours += hours
+      console.log(`Added ${hours} hours to ${workDate}. New total: ${daysMap[workDate].total_hours}`)
+    } else if (workDate) {
+      console.warn(`Date ${workDate} not found in daysMap!`)
     }
   })
 
-  // تبدیل به آرایه و مرتب‌سازی بر اساس تاریخ
-  const result = Object.values(daysMap).sort((a, b) => a.date.localeCompare(b.date))
+  // تبدیل به آرایه و مرتب‌سازی بر اساس تاریخ شمسی
+  const result = Object.values(daysMap).sort((a, b) => {
+    // مقایسه تاریخ‌های شمسی
+    const momentA = moment(a.shamsi_date, 'jYYYY/jMM/jDD')
+    const momentB = moment(b.shamsi_date, 'jYYYY/jMM/jDD')
+    return momentA.diff(momentB)
+  })
+  
   console.log('Final result:', result)
   console.log('=== calculateLastSevenDays END ===')
   
@@ -235,6 +256,7 @@ const lineChartOptions = computed(() => {
   const currentTheme = vuetifyTheme.current.value.colors
   const variableTheme = vuetifyTheme.current.value.variables
   const disabledTextColor = `rgba(${hexToRgb(String(currentTheme['on-surface']))},${variableTheme['disabled-opacity']})`
+  // استفاده از نام روز برای نمایش در محور X
   const categories = dailyWorkHours.value.map(day => day.day_name || '')
   const dataLength = lineChartSeries.value[0]?.data?.length || 0
   
@@ -294,12 +316,23 @@ const lineChartOptions = computed(() => {
           fontFamily: 'IRANSansX, BNazanin, Tahoma, sans-serif',
         },
       },
+      tooltip: {
+        enabled: true,
+        style: {
+          fontSize: '13px',
+          fontFamily: 'IRANSansX, BNazanin, Tahoma, sans-serif',
+        },
+      },
     },
     yaxis: {
       labels: { show: false },
     },
     tooltip: {
       theme: 'dark',
+      style: {
+        fontSize: '13px',
+        fontFamily: 'IRANSansX, BNazanin, Tahoma, sans-serif',
+      },
       y: {
         formatter: (val: number) => formatWorkHours(val),
       },
@@ -497,11 +530,6 @@ onMounted(() => {
           </div>
 
           <template v-else>
-            <div class="mb-2 text-caption text-medium-emphasis">
-              Debug: dailyWorkHours.length = {{ dailyWorkHours.length }}, 
-              series data length = {{ lineChartSeries[0]?.data?.length || 0 }}
-            </div>
-            
             <VueApexCharts
               v-if="dailyWorkHours.length > 0 && lineChartSeries[0]?.data?.length > 0"
               type="line"
@@ -522,9 +550,6 @@ onMounted(() => {
               <p class="text-body-2 text-medium-emphasis">
                 داده‌ای برای نمایش وجود ندارد
               </p>
-              <p class="text-caption text-medium-emphasis mt-2">
-                dailyWorkHours: {{ JSON.stringify(dailyWorkHours) }}
-              </p>
             </div>
           </template>
         </VCardText>
@@ -538,5 +563,27 @@ onMounted(() => {
 .john-illustration {
   inset-block-end: -0.125rem;
   inset-inline-end: 3.5rem;
+}
+
+// استایل برای tooltip نمودار
+:deep(.apexcharts-tooltip) {
+  font-family: 'IRANSansX', 'BNazanin', 'Tahoma', sans-serif !important;
+  
+  .apexcharts-tooltip-title {
+    font-family: 'IRANSansX', 'BNazanin', 'Tahoma', sans-serif !important;
+  }
+  
+  .apexcharts-tooltip-series-group {
+    font-family: 'IRANSansX', 'BNazanin', 'Tahoma', sans-serif !important;
+  }
+}
+
+// استایل برای xaxis tooltip (بخش پایینی که روز رو نشون میده)
+:deep(.apexcharts-xaxistooltip) {
+  font-family: 'IRANSansX', 'BNazanin', 'Tahoma', sans-serif !important;
+  
+  .apexcharts-xaxistooltip-text {
+    font-family: 'IRANSansX', 'BNazanin', 'Tahoma', sans-serif !important;
+  }
 }
 </style>

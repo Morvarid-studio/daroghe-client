@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/lib/axios'
+import moment from 'jalali-moment'
 
 definePage({
   meta: {
@@ -161,6 +162,23 @@ const markProfileCompleted = () => {
     userCookie.value = { ...userCookie.value, profile_completed: true }
 }
 
+// تبدیل تاریخ میلادی به شمسی
+const miladiToShamsi = (miladiDate: string): string => {
+  if (!miladiDate) return ''
+  try {
+    // تبدیل تاریخ میلادی (Y-m-d) به شمسی (Y/m/d)
+    const momentDate = moment(miladiDate, 'YYYY-MM-DD')
+    if (momentDate.isValid()) {
+      return momentDate.format('jYYYY/jMM/jDD')
+    }
+    return miladiDate
+  }
+  catch (error) {
+    console.error('Error converting date to jalali:', error)
+    return miladiDate
+  }
+}
+
 const buildPayload = () => {
   const formData = new FormData()
 
@@ -168,6 +186,15 @@ const buildPayload = () => {
   Object.entries(form.value).forEach(([key, value]) => {
     if (key === 'resume' || key === 'profile_photo') {
       // فایل‌ها رو بعداً اضافه می‌کنیم
+      return
+    }
+
+    // تبدیل birthday از میلادی به شمسی قبل از ارسال
+    if (key === 'birthday' && typeof value === 'string' && value.trim()) {
+      const shamsiDate = miladiToShamsi(value.trim())
+      if (shamsiDate) {
+        formData.append(key, shamsiDate)
+      }
       return
     }
 

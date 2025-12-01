@@ -42,7 +42,7 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`
 }
 
-// تبدیل تاریخ میلادی به شمسی
+// تبدیل تاریخ میلادی به شمسی (برای تاریخ‌های قدیمی که ممکنه میلادی باشن)
 const formatToJalali = (dateString: string) => {
   if (!dateString) return ''
   try {
@@ -57,6 +57,34 @@ const formatToJalali = (dateString: string) => {
     console.error('Error converting date to jalali:', error)
     return dateString
   }
+}
+
+// فرمت کردن تاریخ شمسی برای نمایش (حذف ساعت و timezone)
+const formatShamsiDate = (dateString: string) => {
+  if (!dateString) return ''
+  
+  // اگر تاریخ به صورت ISO 8601 با timezone هست (مثلاً 1404-09-11T00:00:00.000000Z)
+  // فقط قسمت تاریخ رو استخراج می‌کنیم
+  if (dateString.includes('T')) {
+    const datePart = dateString.split('T')[0]
+    // اگر سال شمسی هست (مثلاً 1404-09-11)، به فرمت Y/m/d تبدیل می‌کنیم
+    if (datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return datePart.replace(/-/g, '/')
+    }
+    return datePart
+  }
+  
+  // اگر قبلاً به فرمت Y/m/d هست، همون رو برمی‌گردونیم
+  if (dateString.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+    return dateString
+  }
+  
+  // اگر به فرمت Y-m-d هست، به Y/m/d تبدیل می‌کنیم
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateString.replace(/-/g, '/')
+  }
+  
+  return dateString
 }
 
 // فرمت ساعت کاری
@@ -93,7 +121,7 @@ const fetchWorklogs = async () => {
 const openDeleteDialog = (worklog: any) => {
   worklogToDelete.value = {
     id: worklog.id,
-    date: formatToJalali(worklog.work_date),
+    date: formatShamsiDate(worklog.work_date), // فرمت کردن تاریخ برای نمایش
   }
   deleteDialogVisible.value = true
 }
@@ -198,15 +226,18 @@ const submit = async () => {
 
   try {
     // آماده‌سازی داده‌ها برای ارسال
-    const workDate = form.value.work_date.trim()
+    const miladiDate = form.value.work_date.trim()
     const workHours = parseFloat(form.value.work_hours.toFixed(2))
     const description = form.value.description.trim() || null
+
+    // تبدیل تاریخ میلادی به شمسی قبل از ارسال
+    const shamsiDate = formatToJalali(miladiDate).replace(/\//g, '/') // اطمینان از فرمت Y/m/d
 
     // ساخت payload مطابق با فرمت سرور
     const payload = {
       worklogs: [
         {
-          work_date: workDate,
+          work_date: shamsiDate,
           work_hours: workHours,
           description: description,
         },
@@ -428,7 +459,7 @@ const submit = async () => {
             <!-- ستون تاریخ -->
             <template #item.work_date="{ item }">
               <span class="font-weight-medium">
-                {{ formatToJalali(item.work_date) }}
+                {{ formatShamsiDate(item.work_date) }}
               </span>
             </template>
 
