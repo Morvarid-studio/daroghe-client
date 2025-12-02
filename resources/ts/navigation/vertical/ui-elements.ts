@@ -1,4 +1,7 @@
-export default [
+import type { VerticalNavItems } from '@layouts/types'
+
+// Navigation items base (بدون منوی Admin)
+const baseNavigationItems: VerticalNavItems = [
   {
     title: 'داشبورد',
     icon: { icon: 'bx-home-circle' },
@@ -26,3 +29,30 @@ export default [
     to: { name: 'finance-department-bank-information-form' },
   },
 ]
+
+// استفاده از computed برای reactive navigation
+const navigationItems = computed<VerticalNavItems>(() => {
+  const userDataCookie = useCookie<Record<string, any> | null>('userData')
+  const isAdmin = userDataCookie.value?.role === 'admin'
+
+  // کپی کردن base items
+  const items: VerticalNavItems = [...baseNavigationItems]
+
+  // اضافه کردن منوی Admin فقط برای کاربران Admin
+  if (isAdmin) {
+    items.push(
+      {
+        heading: 'مدیریت',
+      },
+      {
+        title: 'تایید اطلاعات کاربران',
+        icon: { icon: 'bx-user-check' },
+        to: { name: 'admin-pending-profiles' },
+      },
+    )
+  }
+
+  return items
+})
+
+export default navigationItems

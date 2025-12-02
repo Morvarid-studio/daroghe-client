@@ -1,7 +1,7 @@
 import type { RouteNamedMap, _RouterTyped } from 'unplugin-vue-router'
 import { canNavigate } from '@layouts/plugins/casl'
 
-type UserData = Record<string, any> & { profile_completed?: boolean }
+type UserData = Record<string, any> & { profile_completed?: boolean; role?: string }
 
 export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]: any }>) => {
   // 👉 router.beforeEach
@@ -14,6 +14,7 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
     const userDataCookie = useCookie<UserData | null>('userData')
     const isLoggedIn = !!(userDataCookie.value && useCookie('accessToken').value)
     const isProfileCompleted = !!userDataCookie.value?.profile_completed
+    const isAdmin = userDataCookie.value?.role === 'admin'
 
     /*
       If user is logged in and is trying to access login like page, redirect to dashboard
@@ -52,6 +53,11 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
           to: to.fullPath !== '/' ? to.fullPath : undefined,
         },
       }
+    }
+
+    // بررسی دسترسی Admin برای صفحات Admin
+    if (to.path.startsWith('/admin') && !isAdmin) {
+      return { name: 'not-authorized' }
     }
 
     if (!canNavigate(to) && to.matched.length)

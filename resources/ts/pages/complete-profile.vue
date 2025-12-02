@@ -43,6 +43,10 @@ const isSubmitting = ref(false)
 const savedMessage = ref('')
 const errorMessage = ref('')
 const profilePhotoPreview = ref<string | null>(null)
+const rejectionReason = ref<string | null>(null)
+const isLoadingLatest = ref(false)
+const existingProfilePhotoUrl = ref<string | null>(null)
+const existingResumeUrl = ref<string | null>(null)
 
 const genderOptions = [
   { title: 'مرد', value: 'Male' },
@@ -126,8 +130,62 @@ const loadDraft = () => {
   }
 }
 
-onMounted(() => {
-  loadDraft()
+// دریافت آخرین اطلاعات کاربر
+const loadLatestInformation = async () => {
+  try {
+    isLoadingLatest.value = true
+    const response = await api.get('/api/dashboard/information/latest')
+    
+    if (response.data.data) {
+      const latestInfo = response.data.data
+      
+      // پر کردن فیلدهای فرم با آخرین اطلاعات
+      form.value.first_name = latestInfo.first_name || ''
+      form.value.last_name = latestInfo.last_name || ''
+      form.value.address = latestInfo.address || ''
+      // تاریخ میلادی را مستقیماً استفاده می‌کنیم (از دیتابیس به صورت میلادی می‌آید)
+      // date picker خودش میلادی می‌خواهد
+      form.value.birthday = latestInfo.birthday || ''
+      form.value.gender = latestInfo.gender || ''
+      form.value.military = latestInfo.military || ''
+      form.value.degree = latestInfo.degree || ''
+      form.value.phone = latestInfo.phone || ''
+      form.value.emergency_contact_info = latestInfo.emergency_contact_info || ''
+      form.value.emergency_contact_number = latestInfo.emergency_contact_number || ''
+      form.value.education_status = latestInfo.education_status || ''
+      form.value.marital_status = latestInfo.marital_status || ''
+      form.value.profession = latestInfo.profession || ''
+      form.value.languages = latestInfo.languages || ''
+      
+      // ذخیره دلیل رد اگر وجود داشته باشد
+      rejectionReason.value = latestInfo.rejection_reason || null
+      
+      // ذخیره URL فایل‌های قبلی
+      if (latestInfo.profile_photo_url) {
+        existingProfilePhotoUrl.value = latestInfo.profile_photo_url
+      }
+      if (latestInfo.resume_url) {
+        existingResumeUrl.value = latestInfo.resume_url
+      }
+    }
+  } catch (error: any) {
+    // اگر خطا بود، از draft استفاده کن
+    console.warn('Failed to load latest information, using draft:', error)
+    loadDraft()
+  } finally {
+    isLoadingLatest.value = false
+  }
+}
+
+onMounted(async () => {
+  // ابتدا آخرین اطلاعات را از سرور بگیر
+  await loadLatestInformation()
+  
+  // اگر اطلاعاتی از سرور نیامد، از draft استفاده کن
+  if (!form.value.first_name && !form.value.last_name) {
+    loadDraft()
+  }
+  
   handlePhoneInput('phone')
   handlePhoneInput('emergency_contact_number')
 })
@@ -257,6 +315,20 @@ const submit = async () => {
       md="10"
       lg="8"
     >
+      <!-- نمایش دلیل رد -->
+      <VAlert
+        v-if="rejectionReason"
+        type="error"
+        variant="tonal"
+        class="mb-4"
+        closable
+        @click:close="rejectionReason = null"
+      >
+        <VAlertTitle class="mb-2">دلیل رد اطلاعات شما:</VAlertTitle>
+        <p class="mb-0">{{ rejectionReason }}</p>
+        <p class="text-sm mt-2 mb-0">لطفاً اطلاعات را اصلاح کرده و دوباره ارسال کنید.</p>
+      </VAlert>
+
       <VAlert
         type="warning"
         variant="tonal"
@@ -443,9 +515,42 @@ const submit = async () => {
                   v-model="form.resume"
                   label="رزومه"
                   accept=".pdf,.doc,.docx"
-                  hint="فایل PDF یا Word (حداکثر 2MB)"
+                  hint="فایل PDF یا Word (حداکثر 2 مگابایت - 2048 KB)"
                   show-size
                 />
+                <!-- نمایش رزومه قبلی -->
+                <div
+                  v-if="existingResumeUrl && !form.resume"
+                  class="mt-2"
+                >
+                  <VAlert
+                    type="info"
+                    variant="tonal"
+                    density="compact"
+                  >
+                    <div class="d-flex align-center justify-space-between">
+                      <span>رزومه قبلی شما:</span>
+                      <VBtn
+                        color="primary"
+                        size="small"
+                        variant="text"
+                        :href="existingResumeUrl"
+                        target="_blank"
+                        download
+                      >
+                        <VIcon
+                          icon="bx-download"
+                          size="16"
+                          class="me-1"
+                        />
+                        مشاهده رزومه قبلی
+                      </VBtn>
+                    </div>
+                    <p class="text-xs mt-2 mb-0">
+                      اگر می‌خواهید رزومه را تغییر دهید، فایل جدید آپلود کنید.
+                    </p>
+                  </VAlert>
+                </div>
               </VCol>
 
               <VCol cols="12">
@@ -453,15 +558,40 @@ const submit = async () => {
                   v-model="form.profile_photo"
                   label="عکس پروفایل"
                   accept="image/*"
-                  hint="فایل تصویری JPG, PNG یا JPEG (حداکثر 2MB)"
+                  hint="فایل تصویری JPG, PNG یا JPEG (حداکثر 2 مگابایت - 2048 KB)"
                   show-size
                 />
+                <!-- نمایش تصویر پروفایل جدید -->
                 <div
                   v-if="profilePhotoPreview"
                   class="mt-4"
                 >
+                  <p class="text-sm text-disabled mb-2">پیش‌نمایش تصویر جدید:</p>
                   <VImg
                     :src="profilePhotoPreview"
+                    max-width="200"
+                    max-height="200"
+                    class="rounded"
+                    cover
+                  />
+                </div>
+                <!-- نمایش تصویر پروفایل قبلی -->
+                <div
+                  v-else-if="existingProfilePhotoUrl"
+                  class="mt-4"
+                >
+                  <VAlert
+                    type="info"
+                    variant="tonal"
+                    density="compact"
+                    class="mb-2"
+                  >
+                    <p class="text-xs mb-0">
+                      تصویر پروفایل قبلی شما. اگر می‌خواهید تغییر دهید، فایل جدید آپلود کنید.
+                    </p>
+                  </VAlert>
+                  <VImg
+                    :src="existingProfilePhotoUrl"
                     max-width="200"
                     max-height="200"
                     class="rounded"

@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
 import { hexToRgb } from '@core/utils/colorConverter'
 import api from '@/lib/axios'
-import illustrationJohn from '@images/illustrations/illustration-john.png'
+import illustrationJohn from '@images/pages/daroghe.png'
 import moment from 'jalali-moment'
 
 definePage({
