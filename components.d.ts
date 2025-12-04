@@ -7,6 +7,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AddAccountDialog: typeof import('./resources/ts/components/dialogs/AddAccountDialog.vue')['default']
     AddAuthenticatorAppDialog: typeof import('./resources/ts/components/dialogs/AddAuthenticatorAppDialog.vue')['default']
     AddEditAddressDialog: typeof import('./resources/ts/components/dialogs/AddEditAddressDialog.vue')['default']
     AddEditPermissionDialog: typeof import('./resources/ts/components/dialogs/AddEditPermissionDialog.vue')['default']

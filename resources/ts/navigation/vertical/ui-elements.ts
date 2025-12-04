@@ -28,12 +28,19 @@ const baseNavigationItems: VerticalNavItems = [
     icon: { icon: 'bx-credit-card' },
     to: { name: 'finance-department-bank-information-form' },
   },
+  {
+    title: 'مدیریت حساب تنخواه',
+    icon: { icon: 'bx-wallet' },
+    to: { name: 'finance-department-petty-cash' },
+  },
 ]
 
 // استفاده از computed برای reactive navigation
 const navigationItems = computed<VerticalNavItems>(() => {
   const userDataCookie = useCookie<Record<string, any> | null>('userData')
-  const isAdmin = userDataCookie.value?.role === 'admin'
+  // پشتیبانی از هر دو فرمت: role (string) یا role.name (object)
+  const userRole = userDataCookie.value?.role
+  const isAdmin = userRole === 'admin' || (typeof userRole === 'object' && userRole?.name === 'admin')
 
   // کپی کردن base items
   const items: VerticalNavItems = [...baseNavigationItems]
@@ -48,6 +55,21 @@ const navigationItems = computed<VerticalNavItems>(() => {
         title: 'تایید اطلاعات کاربران',
         icon: { icon: 'bx-user-check' },
         to: { name: 'admin-pending-profiles' },
+      },
+      {
+        title: 'مدیریت حساب اصلی',
+        icon: { icon: 'bx-building' },
+        to: { name: 'admin-company-account' },
+      },
+      {
+        title: 'مدیریت حساب‌ها و دسته‌بندی‌ها',
+        icon: { icon: 'bx-category' },
+        to: { name: 'admin-accounts-management' },
+      },
+      {
+        title: 'مدیریت Role ها',
+        icon: { icon: 'bx-shield' },
+        to: { name: 'admin-roles-management' },
       },
     )
   }
