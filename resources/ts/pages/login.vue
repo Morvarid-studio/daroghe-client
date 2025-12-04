@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import api from '@/plugins/axios'
+import api from '@/lib/axios'
 import { useRouter } from 'vue-router'
 import { ref, h } from 'vue'
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
@@ -12,6 +12,8 @@ definePage({
   meta: {
     layout: 'blank',
     public: true,
+    unauthenticatedOnly: true,
+    redirectIfAuth: '/dashboard',
   },
 })
 
@@ -47,7 +49,12 @@ const login = async () =>{
     const token = res.data.token
     const user = res.data.user
 
-    // router.push('/dashboard')
+
+    useCookie('accessToken').value = token
+    useCookie('userData').value = user
+
+    // رفتن به داشبورد
+    router.push('/dashboard')
   }
   catch(error:any){
   console.log(error)
@@ -97,12 +104,8 @@ const login = async () =>{
 
         <VCardText>
           <h4 class="text-h4 mb-1">
-            {{$t('Welcome to')}}
-<!--            <span class="text-capitalize">{{ themeConfig.app.title }}</span>! 👋🏻-->
+            به داروغه خانه خوش اومدی
           </h4>
-<!--          <p class="mb-0">-->
-<!--            Please sign-in to your account and start the adventure-->
-<!--          </p>-->
         </VCardText>
 
         <VCardText>
@@ -150,9 +153,23 @@ const login = async () =>{
                 <VBtn
                   block
                   type="submit"
+                  :loading="isLoading"
+                  :disabled="isLoading"
                 >
                   {{$t('Login')}}
                 </VBtn>
+              </VCol>
+
+              <!-- error message -->
+              <VCol cols="12" v-if="errorMessage">
+                <VAlert
+                  type="error"
+                  variant="tonal"
+                  closable
+                  @click:close="errorMessage = ''"
+                >
+                  {{ errorMessage }}
+                </VAlert>
               </VCol>
 
               <!-- create account -->

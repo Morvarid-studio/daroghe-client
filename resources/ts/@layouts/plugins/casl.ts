@@ -20,6 +20,10 @@ export const can = (action: string | undefined, subject: string | undefined) => 
 
   const localCan = vm.proxy && '$can' in vm.proxy
 
+  // اگر action و subject تعریف نشده باشند، همیشه true برگردان (یعنی نمایش بده)
+  if (!action && !subject)
+    return true
+
   // @ts-expect-error We will get TS error in below line because we aren't using $can in component instance
   return localCan ? vm.proxy?.$can(action, subject) : true
 }
@@ -42,6 +46,12 @@ export const canViewNavMenuGroup = (item: NavGroup) => {
 
 export const canNavigate = (to: RouteLocationNormalized) => {
   const ability = useAbility()
+
+  // If no ACL rules are set yet, allow navigation (fallback behaviour for projects without ACL setup)
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore CASL ability exposes rules array
+  if (!ability?.rules?.length)
+    return true
 
   // Get the most specific route (last one in the matched array)
   const targetRoute = to.matched[to.matched.length - 1]

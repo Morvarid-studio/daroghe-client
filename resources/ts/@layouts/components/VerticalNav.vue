@@ -133,7 +133,7 @@ const hideTitleAndIcon = configStore.isVerticalNavMini(isHovered)
       >
         <Component
           :is="resolveNavItemComponent(item)"
-          v-for="(item, index) in navItems"
+          v-for="(item, index) in props.navItems"
           :key="index"
           :item="item"
         />

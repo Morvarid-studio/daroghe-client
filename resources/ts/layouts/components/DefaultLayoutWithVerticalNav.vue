@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import navItems from '@/navigation/vertical'
+import navItemsComputed from '@/navigation/vertical'
 import { themeConfig } from '@themeConfig'
 
 // Components
@@ -16,6 +16,17 @@ import { useConfigStore } from '@/@core/stores/config'
 import { VerticalNavLayout } from '@layouts'
 
 const configStore = useConfigStore()
+
+// استفاده از computed navigation items
+const navItems = computed(() => {
+  if (typeof navItemsComputed === 'function') {
+    return navItemsComputed()
+  }
+  if (typeof navItemsComputed === 'object' && 'value' in navItemsComputed) {
+    return navItemsComputed.value
+  }
+  return navItemsComputed
+})
 
 // ℹ️ Provide animation name for vertical nav collapse icon.
 const verticalNavHeaderActionAnimationName = ref<null | 'rotate-180' | 'rotate-back-180'>(null)
@@ -49,17 +60,18 @@ const actionArrowInitialRotation = configStore.isVerticalNavCollapsed ? '180deg'
           />
         </IconBtn>
 
-        <NavSearchBar class="ms-lg-n3" />
+        <!-- <NavSearchBar class="ms-lg-n3" /> -->
 
         <VSpacer />
 
-        <NavBarI18n
+        <!-- آیکون‌های مخفی شده (فعلا نیازی نیست) -->
+        <!-- <NavBarI18n
           v-if="themeConfig.app.i18n.enable && themeConfig.app.i18n.langConfig?.length"
           :languages="themeConfig.app.i18n.langConfig"
-        />
-        <NavbarThemeSwitcher />
-        <NavbarShortcuts />
-        <NavBarNotifications class="me-1" />
+        /> -->
+        <!-- <NavbarThemeSwitcher /> -->
+        <!-- <NavbarShortcuts /> -->
+        <!-- <NavBarNotifications class="me-1" /> -->
         <UserProfile />
       </div>
     </template>

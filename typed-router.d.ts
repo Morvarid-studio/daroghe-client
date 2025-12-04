@@ -20,11 +20,20 @@ declare module 'vue-router/auto-routes' {
   export interface RouteNamedMap {
     'root': RouteRecordInfo<'root', '/', Record<never, never>, Record<never, never>>,
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
+    'admin-accounts-management': RouteRecordInfo<'admin-accounts-management', '/admin/accounts-management', Record<never, never>, Record<never, never>>,
+    'admin-company-account': RouteRecordInfo<'admin-company-account', '/admin/company-account', Record<never, never>, Record<never, never>>,
+    'admin-pending-profiles': RouteRecordInfo<'admin-pending-profiles', '/admin/pending-profiles', Record<never, never>, Record<never, never>>,
+    'admin-roles-management': RouteRecordInfo<'admin-roles-management', '/admin/roles-management', Record<never, never>, Record<never, never>>,
+    'complete-profile': RouteRecordInfo<'complete-profile', '/complete-profile', Record<never, never>, Record<never, never>>,
+    'dashboard': RouteRecordInfo<'dashboard', '/dashboard', Record<never, never>, Record<never, never>>,
+    'finance-department-bank-information-form': RouteRecordInfo<'finance-department-bank-information-form', '/finance-department/bank-information-form', Record<never, never>, Record<never, never>>,
+    'finance-department-petty-cash': RouteRecordInfo<'finance-department-petty-cash', '/finance-department/petty-cash', Record<never, never>, Record<never, never>>,
     'forgot-password': RouteRecordInfo<'forgot-password', '/forgot-password', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
+    'olddashboard': RouteRecordInfo<'olddashboard', '/olddashboard', Record<never, never>, Record<never, never>>,
     'register': RouteRecordInfo<'register', '/register', Record<never, never>, Record<never, never>>,
+    'work-hours-add': RouteRecordInfo<'work-hours-add', '/work-hours/add', Record<never, never>, Record<never, never>>,
     'work-hours-chart': RouteRecordInfo<'work-hours-chart', '/work-hours/chart', Record<never, never>, Record<never, never>>,
-    'work-hours-create': RouteRecordInfo<'work-hours-create', '/work-hours/create', Record<never, never>, Record<never, never>>,
   }
 }

@@ -1,0 +1,84 @@
+.vpd-title,
+.vpd-actions,
+.vpd-content .vpd-picker,
+.vpd-main {
+  background-color: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.vpd-main {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  box-shadow: 0 12px 30px rgba(15, 15, 15, 0.1);
+}
+
+.vpd-mode-buttons button.is-active {
+  background-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+}
+
+.vpd-main {
+  --picker-surface-shadow: 0 22px 60px rgba(15, 15, 15, 0.45);
+  --picker-border-color: rgba(var(--v-border-color), 0.32);
+
+  opacity: 1 !important;
+
+  * {
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+  }
+}
+
+.vpd-main,
+.vpd-wrapper,
+.vpd-container,
+.vpd-content,
+.vpd-picker {
+  background-color: rgb(var(--v-theme-surface)) !important;
+}
+
+.vpd-main.vpd-is-popover {
+  .vpd-container {
+    z-index: 2400; // keep picker above cards & dialogs
+  }
+
+  .vpd-content {
+    border: 1px solid var(--picker-border-color);
+    border-radius: 12px;
+    box-shadow: var(--picker-surface-shadow);
+    opacity: 1;
+  }
+}
+
+.vpd-day {
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.vpd-day-effect {
+  background-color: rgb(var(--v-theme-primary));
+}
+
+.vpd-day:not(.vpd-empty):hover .vpd-day-effect {
+  background-color: rgba(var(--v-theme-primary), 0.2);
+  opacity: 1;
+}
+
+.vpd-day.vpd-selected .vpd-day-text,
+.vpd-day.vpd-range-first .vpd-day-text,
+.vpd-day.vpd-range-last .vpd-day-text {
+  color: rgb(var(--v-theme-on-primary));
+}
+
+.vpd-day.vpd-range-between .vpd-day-effect {
+  background-color: rgba(var(--v-theme-primary), 0.12);
+}
+
+.vpd-actions button {
+  color: rgb(var(--v-theme-primary));
+  border-radius: 8px;
+  font-weight: 600;
+
+  &:hover {
+    background-color: rgba(var(--v-theme-primary), 0.08);
+  }
+}
+

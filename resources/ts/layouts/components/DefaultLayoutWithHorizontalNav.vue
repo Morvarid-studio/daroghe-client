@@ -31,16 +31,17 @@ import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
       </RouterLink>
       <VSpacer />
 
-      <NavSearchBar trigger-btn-class="ms-lg-n3" />
+      <!-- <NavSearchBar trigger-btn-class="ms-lg-n3" /> -->
 
-      <NavBarI18n
+      <!-- آیکون‌های مخفی شده (فعلا نیازی نیست) -->
+      <!-- <NavBarI18n
         v-if="themeConfig.app.i18n.enable && themeConfig.app.i18n.langConfig?.length"
         :languages="themeConfig.app.i18n.langConfig"
-      />
+      /> -->
 
-      <NavbarThemeSwitcher />
-      <NavbarShortcuts />
-      <NavBarNotifications class="me-2" />
+      <!-- <NavbarThemeSwitcher /> -->
+      <!-- <NavbarShortcuts /> -->
+      <!-- <NavBarNotifications class="me-2" /> -->
       <UserProfile />
     </template>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { h } from 'vue'
-import api from '@/plugins/axios'
+import api from '@/lib/axios'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
@@ -14,6 +14,8 @@ definePage({
   meta: {
     layout: 'blank',
     public: true,
+    unauthenticatedOnly: true,
+    redirectIfAuth: '/dashboard',
   },
 })
 
@@ -65,10 +67,13 @@ const register = async () => {
     const token = res.data.token
     const user = res.data.user
 
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
 
-    // router.push('/dashboard')
+    // تنظیم کوکی برای گاردهای پروژه پیش‌فرض
+    useCookie('accessToken').value = token
+    useCookie('userData').value = user
+
+    // رفتن به داشبورد
+    router.push('/dashboard')
 
   } catch (error: any) {
     console.error('REGISTER ERROR:', error.response?.data || error)
@@ -117,11 +122,8 @@ const register = async () => {
 
         <VCardText>
           <h4 class="text-h4 mb-1">
-            {{$t('Adventure starts here ❤️')}}
+            بگو ببینم کیستی؟
           </h4>
-<!--          <p class="mb-0">-->
-<!--            Make your app management easy and fun!-->
-<!--          </p>-->
         </VCardText>
 
         <VCardText>
@@ -194,12 +196,24 @@ const register = async () => {
                 <VBtn
                   block
                   type="submit"
+                  :loading="isLoading"
+                  :disabled="isLoading"
                 >
                   {{ $t('Sign up') }}
                 </VBtn>
-
               </VCol>
 
+              <!-- error message -->
+              <VCol cols="12" v-if="errorMessage">
+                <VAlert
+                  type="error"
+                  variant="tonal"
+                  closable
+                  @click:close="errorMessage = ''"
+                >
+                  {{ errorMessage }}
+                </VAlert>
+              </VCol>
 
               <!-- login instead -->
               <VCol

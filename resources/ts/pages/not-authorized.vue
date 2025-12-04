@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import notAuthorizedIllustration from '@images/pages/auth-v2-register-illustration.png'
+import notAuthorizedIllustration from '@images/pages/daroghe.png'
 
 definePage({
   alias: '/pages/misc/not-authorized',
@@ -14,8 +14,8 @@ definePage({
   <div class="misc-wrapper">
     <ErrorHeader
       status-code="401"
-      title="You are not authorized! 🔐"
-      description="You don’t have permission to access this page. Go Home!."
+      title="کی هستی شما"
+      description="برو بچه جون، شما اجازه ورود به اینجا رو نداری"
     />
 
     <VBtn

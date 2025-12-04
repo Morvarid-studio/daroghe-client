@@ -1,4 +1,5 @@
 import uiElements from './ui-elements'
 import type { VerticalNavItems } from '@layouts/types'
 
-export default [...uiElements] as VerticalNavItems
+// Export computed navigation items directly
+export default uiElements
