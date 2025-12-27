@@ -8,6 +8,11 @@ const baseNavigationItems: VerticalNavItems = [
     to: { name: 'dashboard' },
   },
   {
+    title: 'پروفایل',
+    icon: { icon: 'bx-user' },
+    to: { name: 'profile' },
+  },
+  {
     heading: 'ساعات کاری',
   },
   {
