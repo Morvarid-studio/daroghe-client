@@ -1,7 +1,23 @@
 import axios from 'axios'
 
+// تعیین baseURL بر اساس محیط
+const getBaseURL = () => {
+  // اگر متغیر محیطی تنظیم شده، از آن استفاده کن
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  
+  // در development از localhost استفاده کن
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8090'
+  }
+  
+  // در production از relative path استفاده کن
+  return '/api'
+}
+
 const api = axios.create({
-  baseURL: 'http://localhost:8080', // آدرس بک‌اند
+  baseURL: getBaseURL(),
   timeout: 30000, // 30 ثانیه
   headers: {
     'Content-Type': 'application/json',
