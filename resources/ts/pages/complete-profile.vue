@@ -22,6 +22,9 @@ const defaultForm = {
   last_name: '',
   address: '',
   birthday: '',
+  birthday_day: '',
+  birthday_month: '',
+  birthday_year: '',
   gender: '',
   military: '',
   degree: '',
@@ -82,6 +85,21 @@ const militaryOptions = [
   { title: 'معافیت تک‌پسر', value: 'OnlySonExempt' },
 ]
 
+const persianMonths = [
+  { title: 'فروردین', value: '1' },
+  { title: 'اردیبهشت', value: '2' },
+  { title: 'خرداد', value: '3' },
+  { title: 'تیر', value: '4' },
+  { title: 'مرداد', value: '5' },
+  { title: 'شهریور', value: '6' },
+  { title: 'مهر', value: '7' },
+  { title: 'آبان', value: '8' },
+  { title: 'آذر', value: '9' },
+  { title: 'دی', value: '10' },
+  { title: 'بهمن', value: '11' },
+  { title: 'اسفند', value: '12' },
+]
+
 const sanitizeDigits = (value: string) => value.replace(/\D/g, '')
 
 const handlePhoneInput = (field: 'phone' | 'emergency_contact_number') => {
@@ -112,6 +130,29 @@ const persistForm = () => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formDataToSave))
 }
 
+// تبدیل تاریخ میلادی به شمسی و استخراج روز، ماه، سال
+const parseBirthdayToShamsi = (miladiDate: string) => {
+  if (!miladiDate) {
+    return { day: '', month: '', year: '' }
+  }
+  try {
+    const momentDate = moment(miladiDate, 'YYYY-MM-DD')
+    if (momentDate.isValid()) {
+      const shamsiYear = momentDate.format('jYYYY')
+      const shamsiMonth = momentDate.format('jMM')
+      const shamsiDay = momentDate.format('jDD')
+      return {
+        day: shamsiDay,
+        month: String(parseInt(shamsiMonth)),
+        year: shamsiYear,
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing birthday:', error)
+  }
+  return { day: '', month: '', year: '' }
+}
+
 const loadDraft = () => {
   if (typeof window === 'undefined')
     return
@@ -122,6 +163,14 @@ const loadDraft = () => {
     try {
       const parsed = JSON.parse(stored)
       form.value = { ...cloneDefaultForm(), ...parsed }
+      
+      // اگر birthday به فرمت قدیمی (میلادی) وجود دارد، آن را به روز، ماه، سال تبدیل کن
+      if (parsed.birthday && !parsed.birthday_day && !parsed.birthday_month && !parsed.birthday_year) {
+        const parsedDate = parseBirthdayToShamsi(parsed.birthday)
+        form.value.birthday_day = parsedDate.day
+        form.value.birthday_month = parsedDate.month
+        form.value.birthday_year = parsedDate.year
+      }
     }
     catch (error) {
       console.warn('Failed to parse stored profile draft', error)
@@ -143,9 +192,21 @@ const loadLatestInformation = async () => {
       form.value.first_name = latestInfo.first_name || ''
       form.value.last_name = latestInfo.last_name || ''
       form.value.address = latestInfo.address || ''
-      // تاریخ میلادی را مستقیماً استفاده می‌کنیم (از دیتابیس به صورت میلادی می‌آید)
-      // date picker خودش میلادی می‌خواهد
-      form.value.birthday = latestInfo.birthday || ''
+      
+      // تبدیل تاریخ میلادی به شمسی و استخراج روز، ماه، سال
+      if (latestInfo.birthday) {
+        const parsed = parseBirthdayToShamsi(latestInfo.birthday)
+        form.value.birthday_day = parsed.day
+        form.value.birthday_month = parsed.month
+        form.value.birthday_year = parsed.year
+        form.value.birthday = latestInfo.birthday // نگه داشتن برای سازگاری
+      } else {
+        form.value.birthday_day = ''
+        form.value.birthday_month = ''
+        form.value.birthday_year = ''
+        form.value.birthday = ''
+      }
+      
       form.value.gender = latestInfo.gender || ''
       form.value.military = latestInfo.military || ''
       form.value.degree = latestInfo.degree || ''
@@ -237,6 +298,15 @@ const miladiToShamsi = (miladiDate: string): string => {
   }
 }
 
+// تبدیل روز، ماه، سال شمسی به رشته تاریخ شمسی (Y/m/d)
+const shamsiDateToString = (day: string, month: string, year: string): string => {
+  if (!day || !month || !year) return ''
+  // اطمینان از فرمت دو رقمی برای روز و ماه
+  const formattedDay = day.padStart(2, '0')
+  const formattedMonth = month.padStart(2, '0')
+  return `${year}/${formattedMonth}/${formattedDay}`
+}
+
 const buildPayload = () => {
   const formData = new FormData()
 
@@ -247,7 +317,12 @@ const buildPayload = () => {
       return
     }
 
-    // تبدیل birthday از میلادی به شمسی قبل از ارسال
+    // نادیده گرفتن فیلدهای جداگانه تاریخ تولد (روز، ماه، سال)
+    if (key === 'birthday_day' || key === 'birthday_month' || key === 'birthday_year') {
+      return
+    }
+
+    // تبدیل birthday از میلادی به شمسی قبل از ارسال (برای سازگاری)
     if (key === 'birthday' && typeof value === 'string' && value.trim()) {
       const shamsiDate = miladiToShamsi(value.trim())
       if (shamsiDate) {
@@ -265,6 +340,16 @@ const buildPayload = () => {
       formData.append(key, String(value))
     }
   })
+
+  // تبدیل روز، ماه، سال به تاریخ شمسی و اضافه کردن به فرم
+  const shamsiDate = shamsiDateToString(
+    form.value.birthday_day,
+    form.value.birthday_month,
+    form.value.birthday_year
+  )
+  if (shamsiDate) {
+    formData.append('birthday', shamsiDate)
+  }
 
   // اضافه کردن فایل‌ها
   if (form.value.resume instanceof File) {
@@ -389,17 +474,62 @@ const submit = async () => {
               </VCol>
 
               <VCol cols="12" md="6">
-                <AppDateTimePicker
-                  v-model="form.birthday"
-                  calendar="jalali"
-                  label="تاریخ تولد"
-                  placeholder="تاریخ را انتخاب کنید"
-                  :config="{
-                    altInput: true,
-                    altFormat: 'Y/m/d',
-                    dateFormat: 'Y-m-d',
-                  }"
-                />
+                <VLabel class="mb-1 text-body-2 text-wrap" style="line-height: 15px;">
+                  تاریخ تولد
+                </VLabel>
+                <div class="d-flex gap-2">
+                  <AppTextField
+                    v-model="form.birthday_day"
+                    placeholder="روز"
+                    type="number"
+                    inputmode="numeric"
+                    min="1"
+                    max="31"
+                    style="flex: 0 0 80px;"
+                    @blur="() => {
+                      if (form.birthday_day) {
+                        const day = parseInt(form.birthday_day)
+                        if (day < 1 || day > 31) {
+                          form.birthday_day = ''
+                        }
+                      }
+                    }"
+                  />
+                  <AppSelect
+                    v-model="form.birthday_month"
+                    :items="persianMonths"
+                    item-title="title"
+                    item-value="value"
+                    placeholder="ماه"
+                    style="flex: 1;"
+                  />
+                  <AppTextField
+                    v-model="form.birthday_year"
+                    placeholder="سال"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="4"
+                    style="flex: 0 0 100px;"
+                    @input="(e: any) => {
+                      let value = e.target.value.replace(/\D/g, '')
+                      if (value && !value.startsWith('1')) {
+                        value = ''
+                      }
+                      if (value.length > 4) {
+                        value = value.slice(0, 4)
+                      }
+                      form.birthday_year = value
+                    }"
+                    @blur="() => {
+                      if (form.birthday_year) {
+                        const year = parseInt(form.birthday_year)
+                        if (year < 1200 || year > 1500) {
+                          form.birthday_year = ''
+                        }
+                      }
+                    }"
+                  />
+                </div>
               </VCol>
 
               <VCol cols="12" md="6">

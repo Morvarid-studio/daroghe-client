@@ -1,21 +1,23 @@
 <script setup lang="ts">
 import api from '@/lib/axios'
 
-interface AccountCategory {
+interface Tag {
   id: number
   name: string
-  description?: string
+  color?: string
 }
 
 interface AccountFormData {
-  account_category_id?: number | null
   account_type?: 'employee' | 'company' | 'external' | 'petty_cash'
+  display_name?: string
+  owner_name?: string
   name?: string
   user_id?: number | null
   bank_name: string
   account_number: string
   sheba: string
   description?: string
+  tags?: number[]
   roles?: string[]
 }
 
@@ -33,9 +35,10 @@ interface User {
 interface Props {
   isDialogVisible: boolean
   mode?: 'admin' | 'user' // admin: تمام فیلدها، user: فقط فیلدهای حساب بانکی
-  categories?: AccountCategory[]
+  tags?: Tag[]
   roles?: Role[]
   users?: User[]
+  defaultAccountType?: 'employee' | 'company' | 'external' | 'petty_cash'
 }
 
 interface Emit {
@@ -45,23 +48,26 @@ interface Emit {
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'user',
-  categories: () => [],
+  tags: () => [],
   roles: () => [],
   users: () => [],
+  defaultAccountType: 'external',
 })
 
 const emit = defineEmits<Emit>()
 
 // فرم حساب
 const accountForm = ref<AccountFormData>({
-  account_category_id: null,
-  account_type: 'external',
+  account_type: props.defaultAccountType,
+  display_name: '',
+  owner_name: '',
   name: '',
   user_id: null,
   bank_name: '',
   account_number: '',
   sheba: '',
   description: '',
+  tags: [],
   roles: [],
 })
 
@@ -129,14 +135,16 @@ const validateSheba = (event: Event) => {
 // ریست کردن فرم
 const resetForm = () => {
   accountForm.value = {
-    account_category_id: null,
     account_type: 'external',
+    display_name: '',
+    owner_name: '',
     name: '',
     user_id: null,
     bank_name: '',
     account_number: '',
     sheba: '',
     description: '',
+    tags: [],
     roles: [],
   }
   errorMessage.value = ''
@@ -172,8 +180,8 @@ const submitForm = async () => {
   }
   
   if (props.mode === 'admin') {
-    if (!accountForm.value.name?.trim()) {
-      errorMessage.value = 'لطفاً نام حساب را وارد کنید'
+    if (!accountForm.value.display_name?.trim()) {
+      errorMessage.value = 'لطفاً نام نمایشی را وارد کنید'
       return
     }
     // اگر account_type = employee یا petty_cash باشد، user_id الزامی است
@@ -200,6 +208,16 @@ const submitForm = async () => {
 watch(() => props.isDialogVisible, (newVal) => {
   if (!newVal) {
     resetForm()
+  } else {
+    // وقتی دیالوگ باز می‌شود، account_type را از defaultAccountType تنظیم می‌کنیم
+    accountForm.value.account_type = props.defaultAccountType
+  }
+})
+
+// Watch برای defaultAccountType
+watch(() => props.defaultAccountType, (newVal) => {
+  if (props.isDialogVisible && newVal) {
+    accountForm.value.account_type = newVal
   }
 })
 </script>
@@ -229,20 +247,6 @@ watch(() => props.isDialogVisible, (newVal) => {
 
         <VForm @submit.prevent="submitForm">
           <VRow>
-            <!-- دسته‌بندی (فقط برای admin) -->
-            <VCol
-              v-if="mode === 'admin'"
-              cols="12"
-            >
-              <AppSelect
-                v-model="accountForm.account_category_id"
-                :items="categories"
-                item-title="name"
-                item-value="id"
-                label="دسته‌بندی"
-              />
-            </VCol>
-
             <!-- نوع حساب (فقط برای admin) -->
             <VCol
               v-if="mode === 'admin'"
@@ -276,15 +280,26 @@ watch(() => props.isDialogVisible, (newVal) => {
               />
             </VCol>
 
-            <!-- نام حساب (فقط برای admin) -->
+            <!-- نام نمایشی (فقط برای admin) -->
             <VCol
               v-if="mode === 'admin'"
               cols="12"
             >
               <AppTextField
-                v-model="accountForm.name"
-                label="نام حساب"
+                v-model="accountForm.display_name"
+                label="نام نمایشی"
                 required
+              />
+            </VCol>
+
+            <!-- نام صاحب حساب (فقط برای admin) -->
+            <VCol
+              v-if="mode === 'admin'"
+              cols="12"
+            >
+              <AppTextField
+                v-model="accountForm.owner_name"
+                label="نام صاحب حساب"
               />
             </VCol>
 
@@ -331,6 +346,23 @@ watch(() => props.isDialogVisible, (newVal) => {
                 label="توضیحات"
                 placeholder="توضیحات اختیاری"
                 rows="3"
+              />
+            </VCol>
+
+            <!-- تگ‌ها (فقط برای admin) -->
+            <VCol
+              v-if="mode === 'admin' && tags.length > 0"
+              cols="12"
+            >
+              <AppSelect
+                v-model="accountForm.tags"
+                :items="tags"
+                item-title="name"
+                item-value="id"
+                label="تگ‌ها"
+                multiple
+                chips
+                hint="تگ‌های مربوط به این حساب را انتخاب کنید"
               />
             </VCol>
 

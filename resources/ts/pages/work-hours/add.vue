@@ -362,14 +362,7 @@ const submit = async () => {
                     class="w-100"
                     color="primary"
                     track-color="rgba(var(--v-theme-on-surface), 0.12)"
-                  >
-                    <template #prepend>
-                      <span class="text-body-2 text-medium-emphasis">15 دقیقه</span>
-                    </template>
-                    <template #append>
-                      <span class="text-body-2 text-medium-emphasis">8 ساعت</span>
-                    </template>
-                  </VSlider>
+                  />
                 </div>
 
                 <div class="d-flex align-center gap-4 mb-2">
